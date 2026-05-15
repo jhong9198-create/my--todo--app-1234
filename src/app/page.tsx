@@ -7,6 +7,8 @@ import AIAnalysisPanel from "@/app/components/AIAnalysisPanel";
 import BingeMentoringCard from "@/app/components/BingeMentoringCard";
 import NutritionCoachPanel from "@/app/components/NutritionCoachPanel";
 import WeightGraph from "@/app/components/WeightGraph";
+import ExerciseCard from "@/app/components/ExerciseCard";
+import MotivationBubble from "@/app/components/MotivationBubble";
 import { MOOD_EMOJI } from "@/types/recovery";
 
 export default async function Home() {
@@ -97,6 +99,9 @@ export default async function Home() {
             />
           </div>
         )}
+
+        {/* 오늘의 5분 지방태우기 운동 */}
+        <ExerciseCard />
 
         {/* 행동변화 코칭 카드 */}
         {log && bingeMeals.length > 0 && (
@@ -207,6 +212,9 @@ export default async function Home() {
         )}
 
       </div>
+
+      {/* 말풍선 동기부여 — 저녁 야식 주의 / 앱 종료 감지 */}
+      <MotivationBubble />
 
       <style>{`
         .organic-card {
