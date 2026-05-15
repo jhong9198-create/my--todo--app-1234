@@ -480,7 +480,7 @@ export async function generateWeeklyReport() {
   }
 }
 
-function buildFallbackWeeklyFeedback(grade: string, score: number, bingeCount: number, avgStress: number): string {
+function buildFallbackWeeklyFeedback(grade: string, _score: number, bingeCount: number, avgStress: number): string {
   const gradeMsg = grade.startsWith("A")
     ? "이번 주 식습관 관리에서 매우 우수한 성과를 보여주었습니다."
     : grade.startsWith("B")
@@ -726,19 +726,25 @@ export async function getRecoveryMessage(logId: string): Promise<string> {
     .eq("is_binge", true)
     .then(r => (r.data ?? []).length);
 
-  const prompt = `당신은 따뜻하고 비판 없는 회복 전문 코치입니다.
-오늘 사용자의 상태를 보고 "회복" 관점의 짧은 메시지를 써주세요.
-실패가 아닌 "쉬어감"과 "회복 과정"으로 프레이밍하세요.
+  const prompt = `당신은 자기자비(self-compassion) 기반의 회복 코치입니다.
+Kristin Neff의 자기자비 3요소를 자연스럽게 담은 메시지를 써주세요:
+1. 자기친절(self-kindness): 자신에게 따뜻하게 — 비판 없이
+2. 공동인간성(common humanity): 힘든 건 나만이 아님 — 모든 사람이 겪는 일
+3. 마음챙김(mindfulness): 고통을 과장하거나 억누르지 않고 있는 그대로 인식
 
 오늘 데이터:
 - 기분: ${log?.mood ?? 3}/5
 - 스트레스: ${log?.stress_level ?? 3}/5
-- 폭식 횟수: ${bingeCount}회
+- 음식 관련 힘든 순간: ${bingeCount}회
 - 감정: ${log?.emotion_type ?? "미기록"}
 - 감정 이야기: ${log?.emotion_story ?? "미기록"}
 
-2-3문장으로 따뜻하고 짧게. "의지보다 회복", "무너진 게 아니라 쉬어간 것", "이런 날도 회복의 일부" 같은 관점 사용.
-자책 유발 표현 절대 금지. "오늘은 ..." 으로 시작하세요.`;
+규칙:
+- 2-3문장, 따뜻하고 조용한 톤
+- "폭식", "실패", "의지", "노력" 같은 단어 사용 금지
+- "오늘은 ..."으로 시작
+- 자책을 유발하는 어떤 표현도 금지
+- 평가하지 말고, 그냥 곁에 있어주는 느낌으로`;
 
   try {
     const msg = await anthropic.messages.create({
@@ -775,7 +781,6 @@ export async function getPatternInsights(): Promise<string> {
   const lowStressLogs = logs.filter(l => l.stress_level <= 2);
   const highStressBinge = highStressLogs.reduce((a, l) => a + l.meals.filter(m => m.is_binge).length, 0);
   const lowStressBinge = lowStressLogs.reduce((a, l) => a + l.meals.filter(m => m.is_binge).length, 0);
-  const highStressNight = highStressLogs.reduce((a, l) => a + l.meals.filter(m => parseInt(m.meal_time.split(":")[0]) >= 21).length, 0);
 
   const allMeals = logs.flatMap(l => l.meals);
   const nightMeals = allMeals.filter(m => parseInt(m.meal_time.split(":")[0]) >= 21);

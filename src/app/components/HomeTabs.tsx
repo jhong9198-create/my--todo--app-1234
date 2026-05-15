@@ -98,17 +98,17 @@ export default function HomeTabs({ log, meals, analysis, weightHistory, recentLo
               <StatMini
                 label="스트레스"
                 value={
-                  <span className={`text-xl font-bold ${log.stress_level >= 4 ? "text-amber-600 dark:text-amber-400" : "text-stone-700 dark:text-stone-200"}`}>
+                  <span className="text-xl font-bold text-stone-700 dark:text-stone-200">
                     {log.stress_level}
                   </span>
                 }
                 sub="/5"
               />
               <StatMini
-                label={bingeMeals.length > 0 ? "폭식" : "식사"}
+                label="식사"
                 value={
-                  <span className={`text-xl font-bold ${bingeMeals.length > 0 ? "text-red-500" : "text-green-700 dark:text-green-400"}`}>
-                    {bingeMeals.length > 0 ? `${bingeMeals.length}⚠` : meals.length}
+                  <span className="text-xl font-bold text-stone-700 dark:text-stone-200">
+                    {meals.length}
                   </span>
                 }
                 sub="회"
@@ -161,13 +161,8 @@ export default function HomeTabs({ log, meals, analysis, weightHistory, recentLo
             <div className="px-5 pt-5 pb-4 border-b border-stone-100 dark:border-stone-700/50">
               <div className="flex items-center gap-2">
                 <span>🍃</span>
-                <h2 className="text-base font-semibold text-stone-800 dark:text-stone-100 flex items-center gap-2">
+                <h2 className="text-base font-semibold text-stone-800 dark:text-stone-100">
                   식사 & 감정 기록
-                  {bingeMeals.length > 0 && (
-                    <span className="text-xs px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400">
-                      폭식 {bingeMeals.length}회
-                    </span>
-                  )}
                 </h2>
               </div>
               <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5 pl-6">

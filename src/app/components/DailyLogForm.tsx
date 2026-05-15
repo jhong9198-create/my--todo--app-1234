@@ -135,7 +135,7 @@ export default function DailyLogForm({ existing }: Props) {
       {/* 체중 */}
       <div>
         <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">
-          오늘 체중 <span className="text-stone-400 font-normal text-xs">(선택)</span>
+          체중 <span className="text-stone-400 font-normal text-xs">(선택, 부담 없이)</span>
         </label>
         <div className="relative">
           <input
@@ -150,7 +150,7 @@ export default function DailyLogForm({ existing }: Props) {
           />
           <span className="absolute right-3 top-2 text-xs text-stone-400">kg</span>
         </div>
-        <p className="text-xs text-stone-400 mt-1">아침 공복 측정값을 입력하면 체중 그래프에 기록됩니다</p>
+        <p className="text-xs text-stone-400 mt-1">기록해두면 변화 흐름이 보여요. 잊어도 괜찮아요.</p>
       </div>
 
       {/* 메모 */}
@@ -172,7 +172,7 @@ export default function DailyLogForm({ existing }: Props) {
         disabled={isPending}
         className="w-full py-3 rounded-xl bg-green-700 hover:bg-green-800 disabled:bg-green-300 dark:disabled:bg-green-900 text-white font-semibold text-sm transition-colors shadow-sm"
       >
-        {isPending ? "저장 중..." : saved ? "✓ 저장됨" : "오늘 기록 저장"}
+        {isPending ? "담는 중..." : saved ? "✓ 오늘 기록됐어요" : "오늘 하루 담아두기"}
       </button>
     </form>
   );
