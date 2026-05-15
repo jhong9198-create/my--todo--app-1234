@@ -2,7 +2,8 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getRecentLogs, calculateWeeklyGrade } from "@/app/actions";
+import { getRecentLogs } from "@/app/actions";
+import { calculateWeeklyGrade } from "@/lib/grade";
 import Anthropic from "@anthropic-ai/sdk";
 
 const anthropic = new Anthropic();

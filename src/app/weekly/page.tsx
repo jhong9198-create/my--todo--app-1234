@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { getWeeklyLogs, getPastWeeklyReports, calculateWeeklyGrade } from "@/app/actions";
+import { getWeeklyLogs, getPastWeeklyReports } from "@/app/actions";
+import { calculateWeeklyGrade } from "@/lib/grade";
 import WeeklyReportClient from "@/app/weekly/WeeklyReportClient";
 import type { Grade } from "@/types/recovery";
 
