@@ -54,8 +54,25 @@ export default async function ReportPage() {
 
   const latestAnalysis = analyses?.[0];
 
+  // 변화 단계 판단
+  const changeStageColor =
+    bingeEpisodes === 0 && totalDays >= 7
+      ? "text-teal-600 dark:text-teal-400"
+      : bingeEpisodes <= 3
+      ? "text-blue-600 dark:text-blue-400"
+      : "text-amber-600 dark:text-amber-400";
+
+  const changeStageLabel =
+    bingeEpisodes === 0 && totalDays >= 7
+      ? "유지기"
+      : totalDays >= 5
+      ? "행동기"
+      : totalDays >= 3
+      ? "준비기"
+      : "숙고기";
+
   return (
-    <main className="min-h-screen bg-rose-50/30 dark:bg-gray-950 py-8 px-4">
+    <main className="min-h-screen bg-teal-50/30 dark:bg-gray-950 py-8 px-4">
       <div className="max-w-lg mx-auto space-y-6">
         <div className="flex items-center gap-3">
           <Link
@@ -64,9 +81,12 @@ export default async function ReportPage() {
           >
             ←
           </Link>
-          <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-            14일 패턴 리포트
-          </h1>
+          <div>
+            <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+              행동변화 리포트
+            </h1>
+            <p className="text-xs text-gray-400 mt-0.5">최근 14일 분석</p>
+          </div>
         </div>
 
         {totalDays === 0 ? (
@@ -77,6 +97,21 @@ export default async function ReportPage() {
           </div>
         ) : (
           <>
+            {/* 변화 단계 배너 */}
+            <div className="bg-gradient-to-r from-teal-400 to-blue-500 rounded-2xl p-5 text-white">
+              <p className="text-xs text-teal-100 mb-1">현재 변화 단계</p>
+              <p className="text-2xl font-bold">{changeStageLabel}</p>
+              <p className="text-sm text-teal-100 mt-1">
+                {changeStageLabel === "유지기"
+                  ? "폭식 없이 안정적으로 유지하고 있어요. 환경 설계와 대처 전략을 강화하세요."
+                  : changeStageLabel === "행동기"
+                  ? "변화를 실천하고 있어요. 슬럼프가 와도 포기하지 않는 게 핵심이에요."
+                  : changeStageLabel === "준비기"
+                  ? "기록을 시작한 것이 변화의 준비 신호예요. 꾸준히 이어가세요."
+                  : "변화의 필요성을 인식하고 기록을 이어가고 있어요. 잘 하고 있어요."}
+              </p>
+            </div>
+
             {/* 통계 요약 */}
             <div className="grid grid-cols-2 gap-3">
               <StatCard
@@ -108,9 +143,11 @@ export default async function ReportPage() {
                 warn={bingeEpisodes > 0}
               />
               <StatCard
-                label="기록 달성률"
-                value={`${Math.round((totalDays / 14) * 100)}%`}
-                sub="14일 기준"
+                label="변화 단계"
+                value={changeStageLabel}
+                sub="프로차스카 모델"
+                highlight
+                highlightColor={changeStageColor}
               />
             </div>
 
@@ -123,7 +160,7 @@ export default async function ReportPage() {
                 {moodTrend.map((mood, i) => (
                   <div key={i} className="flex-1 flex flex-col items-center gap-1">
                     <div
-                      className="w-full rounded-t-sm bg-rose-300 dark:bg-rose-600 transition-all"
+                      className="w-full rounded-t-sm bg-teal-300 dark:bg-teal-600 transition-all"
                       style={{ height: `${(mood / 5) * 100}%` }}
                     />
                     <span className="text-[9px] text-gray-400">{MOOD_EMOJI[mood as 1|2|3|4|5]}</span>
@@ -136,12 +173,15 @@ export default async function ReportPage() {
               </div>
             </div>
 
-            {/* 폭식 장소 분석 */}
+            {/* 폭식 장소 패턴 */}
             {Object.keys(bingeByLocation).length > 0 && (
               <div className="bg-white dark:bg-gray-800 rounded-2xl p-5 border border-gray-100 dark:border-gray-700">
-                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-                  폭식 발생 장소
+                <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                  폭식 발생 장소 패턴
                 </h2>
+                <p className="text-xs text-gray-400 mb-3">
+                  특정 장소가 폭식의 신호(Cue)가 될 수 있어요
+                </p>
                 <div className="space-y-2">
                   {Object.entries(bingeByLocation)
                     .sort((a, b) => b[1] - a[1])
@@ -152,7 +192,7 @@ export default async function ReportPage() {
                         </span>
                         <div className="flex-1 bg-gray-100 dark:bg-gray-700 rounded-full h-2">
                           <div
-                            className="bg-red-400 h-2 rounded-full transition-all"
+                            className="bg-blue-400 h-2 rounded-full transition-all"
                             style={{
                               width: `${(count / bingeEpisodes) * 100}%`,
                             }}
@@ -167,31 +207,51 @@ export default async function ReportPage() {
               </div>
             )}
 
-            {/* AI 패턴 리포트 */}
+            {/* AI 코칭 리포트 */}
             {latestAnalysis && (
-              <div className="bg-gradient-to-br from-violet-50 to-rose-50 dark:from-violet-900/20 dark:to-rose-900/20 rounded-2xl p-5 border border-violet-100 dark:border-violet-800">
+              <div className="bg-gradient-to-br from-teal-50 to-blue-50 dark:from-teal-900/20 dark:to-blue-900/20 rounded-2xl p-5 border border-teal-100 dark:border-teal-800">
                 <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center gap-1.5">
-                  <span>✨</span> AI 패턴 리포트
+                  <span>🧠</span> AI 코칭 인사이트
                 </h2>
                 {latestAnalysis.pattern_report && (
                   <p className="text-sm text-gray-700 dark:text-gray-300 leading-relaxed mb-3">
                     {latestAnalysis.pattern_report}
                   </p>
                 )}
-                {latestAnalysis.binge_triggers && (
-                  <div className="mt-3 pt-3 border-t border-violet-100 dark:border-violet-800">
+                {latestAnalysis.recovery_status && (
+                  <div className="mt-3 pt-3 border-t border-teal-100 dark:border-teal-800">
                     <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      폭식 트리거
+                      변화 단계 평가
+                    </p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300">
+                      {latestAnalysis.recovery_status}
+                    </p>
+                  </div>
+                )}
+                {latestAnalysis.binge_triggers && (
+                  <div className="mt-3 pt-3 border-t border-teal-100 dark:border-teal-800">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      트리거 분석
                     </p>
                     <p className="text-sm text-gray-700 dark:text-gray-300">
                       {latestAnalysis.binge_triggers}
                     </p>
                   </div>
                 )}
-                {latestAnalysis.tomorrow_routine && (
-                  <div className="mt-3 pt-3 border-t border-violet-100 dark:border-violet-800">
+                {latestAnalysis.time_patterns && (
+                  <div className="mt-3 pt-3 border-t border-teal-100 dark:border-teal-800">
                     <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
-                      추천 루틴
+                      대처 전략
+                    </p>
+                    <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
+                      {latestAnalysis.time_patterns}
+                    </p>
+                  </div>
+                )}
+                {latestAnalysis.tomorrow_routine && (
+                  <div className="mt-3 pt-3 border-t border-teal-100 dark:border-teal-800">
+                    <p className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+                      행동 실천 계획
                     </p>
                     <p className="text-sm text-gray-700 dark:text-gray-300 whitespace-pre-line">
                       {latestAnalysis.tomorrow_routine}
@@ -204,11 +264,11 @@ export default async function ReportPage() {
             {!latestAnalysis && (
               <div className="text-center py-6">
                 <p className="text-sm text-gray-400 mb-3">
-                  오늘 AI 분석을 실행하면 리포트가 여기 표시됩니다
+                  오늘 AI 코칭을 실행하면 리포트가 여기 표시됩니다
                 </p>
                 <Link
                   href="/"
-                  className="text-sm text-rose-400 hover:text-rose-500"
+                  className="text-sm text-teal-500 hover:text-teal-600"
                 >
                   오늘 기록으로 →
                 </Link>
@@ -226,17 +286,23 @@ function StatCard({
   value,
   sub,
   warn = false,
+  highlight = false,
+  highlightColor,
 }: {
   label: string;
   value: string;
   sub?: string;
   warn?: boolean;
+  highlight?: boolean;
+  highlightColor?: string;
 }) {
   return (
     <div
       className={`rounded-2xl p-4 border ${
         warn
           ? "bg-amber-50 dark:bg-amber-900/10 border-amber-100 dark:border-amber-800"
+          : highlight
+          ? "bg-teal-50 dark:bg-teal-900/10 border-teal-100 dark:border-teal-800"
           : "bg-white dark:bg-gray-800 border-gray-100 dark:border-gray-700"
       }`}
     >
@@ -245,6 +311,8 @@ function StatCard({
         className={`text-xl font-bold mt-1 ${
           warn
             ? "text-amber-600 dark:text-amber-400"
+            : highlight && highlightColor
+            ? highlightColor
             : "text-gray-800 dark:text-gray-200"
         }`}
       >

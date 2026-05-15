@@ -21,7 +21,7 @@ export default function AIAnalysisPanel({ logId, existing }: Props) {
         const result = await analyzeToday(logId);
         setAnalysis(result as AIAnalysis);
       } catch (e) {
-        setError(e instanceof Error ? e.message : "분석 중 오류가 발생했습니다.");
+        setError(e instanceof Error ? e.message : "코칭 중 오류가 발생했습니다.");
       }
     });
   }
@@ -31,17 +31,17 @@ export default function AIAnalysisPanel({ logId, existing }: Props) {
       <button
         onClick={handleAnalyze}
         disabled={isPending}
-        className="w-full py-3 rounded-xl bg-gradient-to-r from-violet-400 to-rose-400 hover:from-violet-500 hover:to-rose-500 disabled:opacity-50 text-white font-semibold text-sm transition-all shadow-sm"
+        className="w-full py-3 rounded-xl bg-gradient-to-r from-teal-400 to-blue-500 hover:from-teal-500 hover:to-blue-600 disabled:opacity-50 text-white font-semibold text-sm transition-all shadow-sm"
       >
         {isPending ? (
           <span className="flex items-center justify-center gap-2">
             <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-            AI 분석 중...
+            AI 코칭 분석 중...
           </span>
         ) : analysis ? (
-          "AI 재분석"
+          "코칭 재분석"
         ) : (
-          "AI 패턴 분석하기 ✨"
+          "AI 행동 코칭 받기 🧠"
         )}
       </button>
 
@@ -51,46 +51,46 @@ export default function AIAnalysisPanel({ logId, existing }: Props) {
 
       {analysis && (
         <div className="space-y-3">
-          <AnalysisCard
-            emoji="💬"
-            title="오늘 회복 코멘트"
+          <CoachingCard
+            emoji="🧠"
+            title="오늘의 코칭 메시지"
             content={analysis.today_comment}
             highlight
           />
-          <AnalysisCard
-            emoji="🗓️"
-            title="내일 추천 루틴"
+          <CoachingCard
+            emoji="📋"
+            title="내일 행동 실천 계획"
             content={analysis.tomorrow_routine}
           />
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <AnalysisCard
-              emoji="💭"
-              title="감정 패턴"
+            <CoachingCard
+              emoji="🔄"
+              title="습관 루프 분석"
               content={analysis.emotional_patterns}
               compact
             />
-            <AnalysisCard
-              emoji="🕐"
-              title="시간대 패턴"
+            <CoachingCard
+              emoji="🛡️"
+              title="대처 전략"
               content={analysis.time_patterns}
               compact
             />
-            <AnalysisCard
-              emoji="🌱"
-              title="회복 상태"
+            <CoachingCard
+              emoji="📍"
+              title="변화 단계"
               content={analysis.recovery_status}
               compact
             />
-            <AnalysisCard
-              emoji="⚠️"
-              title="폭식 트리거"
+            <CoachingCard
+              emoji="⚡"
+              title="트리거 분석"
               content={analysis.binge_triggers}
               compact
             />
           </div>
-          <AnalysisCard
+          <CoachingCard
             emoji="📊"
-            title="반복 패턴 리포트"
+            title="행동 패턴 리포트"
             content={analysis.pattern_report}
           />
         </div>
@@ -99,7 +99,7 @@ export default function AIAnalysisPanel({ logId, existing }: Props) {
   );
 }
 
-function AnalysisCard({
+function CoachingCard({
   emoji,
   title,
   content,
@@ -117,7 +117,7 @@ function AnalysisCard({
     <div
       className={`rounded-xl p-4 ${
         highlight
-          ? "bg-gradient-to-br from-rose-50 to-violet-50 dark:from-rose-900/20 dark:to-violet-900/20 border border-rose-100 dark:border-rose-800"
+          ? "bg-gradient-to-br from-teal-50 to-blue-50 dark:from-teal-900/20 dark:to-blue-900/20 border border-teal-100 dark:border-teal-800"
           : "bg-gray-50 dark:bg-gray-800/50 border border-gray-100 dark:border-gray-700"
       }`}
     >
