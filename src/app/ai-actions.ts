@@ -656,3 +656,209 @@ function buildFallbackMentoring(
   ];
   return general[mood % general.length];
 }
+
+// ── 감정 공감 ──────────────────────────────────────────────────────
+
+export async function getEmotionComfort(logId: string): Promise<string> {
+  const supabase = await createClient();
+  const { data: log } = await supabase.from("daily_logs").select("*").eq("id", logId).single();
+  if (!log?.emotion_story && !log?.emotion_type) return "오늘 감정을 먼저 기록해주세요.";
+
+  const prompt = `당신은 오랜 친구처럼 따뜻하게 공감해주는 감정 지지자입니다.
+절대 조언하거나 가르치려 하지 마세요. 먼저 충분히 들어주고 이해받는 느낌을 주는 게 전부예요.
+
+오늘 감정 유형: ${log.emotion_type ?? "기록 없음"}
+오늘 있었던 일: ${log.emotion_story ?? "이야기 없음"}
+기분 점수: ${log.mood}/5, 스트레스: ${log.stress_level}/5
+
+아래 형식으로 응답 (각 섹션 1-2문장, 총 100자 내외):
+
+===공감===
+그 감정을 완전히 인정하는 문장. "~하셨겠어요", "그럴 수 있어요" 사용. 판단 없이.
+
+===이해===
+왜 그 감정이 생겼는지 사용자 편에서 1문장. "당연한 거예요" 식으로.
+
+===위로===
+따뜻한 격려 1문장. "오늘도 충분히 잘 하고 있어요" 같은 정서적 연결.`;
+
+  try {
+    const msg = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 300,
+      messages: [{ role: "user", content: prompt }],
+    });
+    const text = msg.content[0].type === "text" ? msg.content[0].text : "";
+    const extract = (s: string) => {
+      const m = text.match(new RegExp(`===${s}===\\s*([\\s\\S]*?)(?====|$)`));
+      return m ? m[1].trim() : null;
+    };
+    const result = [extract("공감"), extract("이해"), extract("위로")].filter(Boolean).join("\n\n");
+    await supabase.from("daily_logs").update({ ai_comfort: result }).eq("id", logId);
+    revalidatePath("/");
+    return result || text.slice(0, 200);
+  } catch {
+    const fallbacks: Record<string, string> = {
+      "불안": "불안한 마음이 드는 건 정말 힘든 일이에요. 그 감정이 얼마나 무거운지 느껴져요.\n\n불안은 우리가 무언가를 깊이 신경 쓰고 있다는 신호예요. 당연한 거예요.\n\n지금 이 순간 숨 한 번 깊게 쉬어요. 오늘도 충분히 잘 하고 있어요.",
+      "슬픔": "슬프다는 건 정말 힘든 감정이에요. 그 무게를 혼자 감당하고 계신 게 느껴져요.\n\n슬픔은 소중한 것들을 마음에 품고 있기 때문에 생겨요. 당연한 거예요.\n\n울어도 괜찮아요. 오늘 하루도 잘 버텨내셨어요.",
+      "분노": "화가 나는 건 정당한 감정이에요. 억울하고 속상한 마음이 느껴져요.\n\n그 분노는 옳은 것을 원하고 있다는 신호예요. 당연히 화가 날 수 있어요.\n\n그 감정을 인정해주세요. 오늘도 잘 버티셨어요.",
+      "공허": "공허한 느낌은 묘하게 힘든 감정이에요. 무엇을 해야 할지 모르는 그 막막함이 느껴져요.\n\n공허함은 충전이 필요하다는 신호예요. 당연히 그럴 수 있어요.\n\n오늘은 그냥 쉬어도 괜찮아요. 충분히 잘 하고 있어요.",
+      "지침": "정말 많이 지치셨겠어요. 그 피로감이 얼마나 무거운지 느껴져요.\n\n몸과 마음이 힘들 땐 쉬어야 한다는 신호예요. 당연한 거예요.\n\n오늘은 자신에게 친절하게 대해주세요. 충분히 잘 하고 있어요.",
+      "외로움": "외로운 마음이 드는 건 정말 힘든 거예요. 그 쓸쓸함이 얼마나 힘든지 알아요.\n\n외로움은 연결을 원하는 마음에서 와요. 당연히 그럴 수 있어요.\n\n지금 이 기록이 자신과 연결되는 시간이에요. 오늘도 잘 하고 있어요.",
+    };
+    const result = fallbacks[log.emotion_type ?? ""] ?? "오늘 감정을 기록해주셔서 감사해요. 자신의 마음을 들여다보는 것 자체가 용기 있는 일이에요.\n\n어떤 감정이든 당신의 것이고 당연한 거예요.\n\n항상 응원합니다.";
+    await supabase.from("daily_logs").update({ ai_comfort: result }).eq("id", logId);
+    revalidatePath("/");
+    return result;
+  }
+}
+
+// ── 회복 메시지 ────────────────────────────────────────────────────
+
+export async function getRecoveryMessage(logId: string): Promise<string> {
+  const supabase = await createClient();
+  const { data: log } = await supabase.from("daily_logs").select("*").eq("id", logId).single();
+
+  const bingeCount = await supabase
+    .from("meals")
+    .select("id")
+    .eq("log_id", logId)
+    .eq("is_binge", true)
+    .then(r => (r.data ?? []).length);
+
+  const prompt = `당신은 따뜻하고 비판 없는 회복 전문 코치입니다.
+오늘 사용자의 상태를 보고 "회복" 관점의 짧은 메시지를 써주세요.
+실패가 아닌 "쉬어감"과 "회복 과정"으로 프레이밍하세요.
+
+오늘 데이터:
+- 기분: ${log?.mood ?? 3}/5
+- 스트레스: ${log?.stress_level ?? 3}/5
+- 폭식 횟수: ${bingeCount}회
+- 감정: ${log?.emotion_type ?? "미기록"}
+- 감정 이야기: ${log?.emotion_story ?? "미기록"}
+
+2-3문장으로 따뜻하고 짧게. "의지보다 회복", "무너진 게 아니라 쉬어간 것", "이런 날도 회복의 일부" 같은 관점 사용.
+자책 유발 표현 절대 금지. "오늘은 ..." 으로 시작하세요.`;
+
+  try {
+    const msg = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 200,
+      messages: [{ role: "user", content: prompt }],
+    });
+    const text = msg.content[0].type === "text" ? msg.content[0].text.trim() : "";
+    await supabase.from("daily_logs").update({ recovery_message: text }).eq("id", logId);
+    revalidatePath("/");
+    return text;
+  } catch {
+    const msgs = [
+      "오늘은 의지보다 회복이 필요한 하루였을 수 있어요. 무너진 게 아니라 잠깐 쉬어간 거예요. 이런 날도 당신의 회복 여정에 포함돼요.",
+      "오늘 완벽하지 않았어도 괜찮아요. 이런 날이 있어야 더 단단해져요. 기록한 것 자체가 이미 회복의 시작이에요.",
+      "오늘은 통제보다 자기 돌봄이 필요한 날이었어요. 자책 말고 오늘 하루 그냥 받아들여요. 내일이 또 있으니까요.",
+      "오늘 흔들렸다면, 그건 당신이 여전히 노력하고 있다는 증거예요. 넘어진 게 아니라 쉬어간 거예요.",
+    ];
+    const result = msgs[Math.floor(Math.random() * msgs.length)];
+    await supabase.from("daily_logs").update({ recovery_message: result }).eq("id", logId);
+    revalidatePath("/");
+    return result;
+  }
+}
+
+// ── 데이터 기반 패턴 인사이트 ──────────────────────────────────────
+
+export async function getPatternInsights(): Promise<string> {
+  const logs = await getRecentLogs(14);
+  if (logs.length < 3) return "3일 이상 기록하면 패턴 분석이 시작돼요. 조금 더 기록해주세요!";
+
+  // 구체적 통계 계산
+  const highStressLogs = logs.filter(l => l.stress_level >= 4);
+  const lowStressLogs = logs.filter(l => l.stress_level <= 2);
+  const highStressBinge = highStressLogs.reduce((a, l) => a + l.meals.filter(m => m.is_binge).length, 0);
+  const lowStressBinge = lowStressLogs.reduce((a, l) => a + l.meals.filter(m => m.is_binge).length, 0);
+  const highStressNight = highStressLogs.reduce((a, l) => a + l.meals.filter(m => parseInt(m.meal_time.split(":")[0]) >= 21).length, 0);
+
+  const allMeals = logs.flatMap(l => l.meals);
+  const nightMeals = allMeals.filter(m => parseInt(m.meal_time.split(":")[0]) >= 21);
+  const emotionNightMeals = nightMeals.filter(m => m.emotional_state && !m.emotional_state.includes("진짜 배고파서") && !m.emotional_state.includes("시간이라서"));
+
+  // 요일별 폭식 패턴
+  const dayBinge: Record<number, number> = {};
+  logs.forEach(l => {
+    const day = new Date(l.date + "T00:00:00").getDay();
+    dayBinge[day] = (dayBinge[day] ?? 0) + l.meals.filter(m => m.is_binge).length;
+  });
+  const peakDay = Object.entries(dayBinge).sort((a, b) => b[1] - a[1])[0];
+  const dayNames = ["일", "월", "화", "수", "목", "금", "토"];
+
+  const stats = {
+    totalDays: logs.length,
+    totalBinge: logs.reduce((a, l) => a + l.meals.filter(m => m.is_binge).length, 0),
+    avgStress: (logs.reduce((a, l) => a + l.stress_level, 0) / logs.length).toFixed(1),
+    avgMood: (logs.reduce((a, l) => a + l.mood, 0) / logs.length).toFixed(1),
+    highStressCount: highStressLogs.length,
+    highStressBinge,
+    lowStressBinge,
+    nightMealCount: nightMeals.length,
+    emotionNightMealCount: emotionNightMeals.length,
+    peakBingeDay: peakDay ? dayNames[parseInt(peakDay[0])] : null,
+    mealEatReasons: allMeals.map(m => m.emotional_state).filter(Boolean).slice(0, 20).join(" | "),
+  };
+
+  const prompt = `당신은 데이터 기반 식습관 패턴 분석 전문가입니다.
+아래 ${stats.totalDays}일 데이터를 분석하여 구체적인 패턴 인사이트를 생성하세요.
+숫자와 구체적 사실에 근거해서, "~한 경향이 있어요", "~빈도가 높았어요" 식으로 써주세요.
+따뜻하지만 명확하게. 조언보다 패턴 설명에 집중하세요.
+
+데이터 요약:
+- 분석 기간: ${stats.totalDays}일
+- 총 폭식: ${stats.totalBinge}회
+- 평균 스트레스: ${stats.avgStress}/5, 평균 기분: ${stats.avgMood}/5
+- 스트레스 4+인 날(${stats.highStressCount}일)의 폭식: ${stats.highStressBinge}회
+- 저스트레스 날(${lowStressLogs.length}일)의 폭식: ${stats.lowStressBinge}회
+- 밤 9시 이후 식사: ${stats.nightMealCount}회 (중 감정적 이유: ${stats.emotionNightMealCount}회)
+- 폭식 집중 요일: ${stats.peakBingeDay ?? "특정 없음"}
+- 식사 이유 샘플: ${stats.mealEatReasons || "미기록"}
+
+아래 형식으로 3가지 패턴과 핵심 포인트:
+
+===패턴1===
+구체적 패턴 1 (숫자 포함, 1-2문장)
+
+===패턴2===
+구체적 패턴 2 (숫자 포함, 1-2문장)
+
+===패턴3===
+구체적 패턴 3 (숫자 포함, 1-2문장)
+
+===핵심포인트===
+가장 효과적인 개입 포인트 1가지 (1문장)`;
+
+  try {
+    const msg = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 400,
+      messages: [{ role: "user", content: prompt }],
+    });
+    const text = msg.content[0].type === "text" ? msg.content[0].text : "";
+    const extract = (s: string) => {
+      const m = text.match(new RegExp(`===${s}===\\s*([\\s\\S]*?)(?====|$)`));
+      return m ? m[1].trim() : null;
+    };
+    const patterns = [extract("패턴1"), extract("패턴2"), extract("패턴3")].filter(Boolean);
+    const key = extract("핵심포인트");
+    return JSON.stringify({ patterns, key });
+  } catch {
+    const patterns = [
+      stats.highStressCount > 0 && stats.highStressBinge > stats.lowStressBinge
+        ? `스트레스 4점 이상인 날(${stats.highStressCount}일) 폭식이 ${stats.lowStressBinge === 0 ? "집중" : `${Math.round((stats.highStressBinge / Math.max(1, stats.lowStressBinge)) * 10) / 10}배 많이`} 나타났어요`
+        : "스트레스와 폭식의 연관성을 더 기록하면 패턴이 보여요",
+      stats.emotionNightMealCount > 0
+        ? `밤 9시 이후 식사 ${stats.nightMealCount}회 중 ${stats.emotionNightMealCount}회가 감정적 이유로 기록됐어요`
+        : "밤 시간대 식사 패턴은 아직 데이터가 부족해요",
+      stats.peakBingeDay
+        ? `${stats.peakBingeDay}요일에 폭식 빈도가 가장 높게 나타났어요`
+        : "아직 특정 요일 패턴은 보이지 않아요",
+    ].filter((p): p is string => typeof p === "string");
+    return JSON.stringify({ patterns, key: "스트레스 수치가 4 이상인 날 저녁 루틴을 미리 계획해두는 것이 효과적이에요" });
+  }
+}

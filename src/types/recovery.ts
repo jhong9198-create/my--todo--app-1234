@@ -46,6 +46,10 @@ export interface DailyLog {
   stress_level: MoodLevel;
   notes: string | null;
   weight_kg: number | null;
+  emotion_type: string | null;
+  emotion_story: string | null;
+  ai_comfort: string | null;
+  recovery_message: string | null;
   created_at: string;
 }
 

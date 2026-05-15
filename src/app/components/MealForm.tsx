@@ -25,15 +25,15 @@ const EMOTION_TAGS = [
   { label: "지루함", emoji: "🙄" },
 ];
 
-const CUE_OPTIONS = [
-  { label: "진짜 배고픔", emoji: "🟢" },
-  { label: "시간이 돼서", emoji: "🕐" },
-  { label: "감정적 불편감", emoji: "🌀" },
-  { label: "습관적으로", emoji: "🔁" },
-  { label: "스트레스/긴장", emoji: "⚡" },
-  { label: "지루함/무료함", emoji: "😑" },
-  { label: "사회적 상황", emoji: "👥" },
-  { label: "음식이 눈에 보여서", emoji: "👀" },
+const EAT_REASONS = [
+  { label: "진짜 배가 고파서", emoji: "🍽️" },
+  { label: "스트레스를 풀려고", emoji: "🔥" },
+  { label: "외롭고 허전해서", emoji: "💙" },
+  { label: "습관적으로/심심해서", emoji: "🔁" },
+  { label: "감정이 너무 힘들어서", emoji: "💔" },
+  { label: "사람들과 함께라서", emoji: "👥" },
+  { label: "맛있어 보여서/냄새에", emoji: "👃" },
+  { label: "나에게 보상으로", emoji: "🎁" },
 ];
 
 const BINGE_IMMEDIATE_MESSAGES = [
@@ -51,7 +51,7 @@ export default function MealForm() {
   const [mealTime, setMealTime] = useState<string>("08:00");
   const [isBinge, setIsBinge] = useState(false);
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [selectedCue, setSelectedCue] = useState<string>("");
+  const [selectedReason, setSelectedReason] = useState<string>("");
   const [diaryText, setDiaryText] = useState("");
   const [showBingeMsg, setShowBingeMsg] = useState(false);
   const [bingeMsgIdx] = useState(() => Math.floor(Math.random() * BINGE_IMMEDIATE_MESSAGES.length));
@@ -81,7 +81,7 @@ export default function MealForm() {
     data.set("is_binge", isBinge ? "true" : "false");
     const combined = [
       `[${mealType}]`,
-      selectedCue ? `신호: ${selectedCue}` : "",
+      selectedReason ? `이유: ${selectedReason}` : "",
       selectedTags.length > 0 ? `감정: ${selectedTags.join(", ")}` : "",
       diaryText,
     ]
@@ -96,7 +96,7 @@ export default function MealForm() {
       setMealTime("08:00");
       setIsBinge(false);
       setSelectedTags([]);
-      setSelectedCue("");
+      setSelectedReason("");
       setDiaryText("");
       setShowBingeMsg(false);
       setOpen(false);
@@ -150,24 +150,26 @@ export default function MealForm() {
           />
         </div>
 
-        {/* 식사 신호 (Cue) */}
+        {/* 왜 먹었나요? */}
         <div>
-          <label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-2">
-            🔍 먹게 된 신호(Cue)는 무엇인가요?
+          <label className="block text-xs font-medium text-stone-600 dark:text-stone-400 mb-1">
+            💬 오늘 왜 이걸 먹었나요?
           </label>
-          <div className="flex flex-wrap gap-1.5">
-            {CUE_OPTIONS.map((cue) => (
+          <p className="text-[10px] text-stone-400 mb-2">솔직하게 선택해주세요. 판단하지 않아요.</p>
+          <div className="grid grid-cols-2 gap-1.5">
+            {EAT_REASONS.map((r) => (
               <button
-                key={cue.label}
+                key={r.label}
                 type="button"
-                onClick={() => setSelectedCue(selectedCue === cue.label ? "" : cue.label)}
-                className={`px-2.5 py-1 rounded-full text-xs transition-all border ${
-                  selectedCue === cue.label
-                    ? "bg-green-700 border-green-700 text-white"
-                    : "bg-white/70 dark:bg-stone-700/70 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-green-400 hover:text-green-700"
+                onClick={() => setSelectedReason(selectedReason === r.label ? "" : r.label)}
+                className={`px-2.5 py-2 rounded-xl text-xs transition-all border text-left flex items-center gap-1.5 ${
+                  selectedReason === r.label
+                    ? "bg-indigo-600 border-indigo-600 text-white font-semibold"
+                    : "bg-white/70 dark:bg-stone-700/70 border-stone-200 dark:border-stone-600 text-stone-600 dark:text-stone-300 hover:border-indigo-300 hover:text-indigo-700"
                 }`}
               >
-                {cue.emoji} {cue.label}
+                <span>{r.emoji}</span>
+                <span className="leading-tight">{r.label}</span>
               </button>
             ))}
           </div>
@@ -250,7 +252,7 @@ export default function MealForm() {
               setOpen(false);
               setIsBinge(false);
               setSelectedTags([]);
-              setSelectedCue("");
+              setSelectedReason("");
               setDiaryText("");
               setShowBingeMsg(false);
             }}

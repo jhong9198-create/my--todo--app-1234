@@ -31,6 +31,18 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* 오가닉 카드 — 전역 공통 */
+.organic-card {
+  background: rgba(253, 250, 245, 0.85);
+  border: 1px solid #E0D8CC;
+  border-radius: 1.25rem;
+  box-shadow: 0 1px 3px rgba(58,46,38,0.06), 0 4px 16px rgba(58,46,38,0.04);
+  backdrop-filter: blur(8px);
+}
+@media (prefers-color-scheme: dark) {
+  .organic-card { background: rgba(37,32,24,0.85); border-color: #3A3020; }
+}
+
 /* 말풍선 슬라이드업 애니메이션 */
 @keyframes bubbleSlideUp {
   from { opacity: 0; transform: translateY(20px); }

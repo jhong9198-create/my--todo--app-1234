@@ -148,6 +148,20 @@ export async function deleteMeal(id: string) {
   revalidatePath("/");
 }
 
+export async function saveEmotionJournal(
+  logId: string,
+  emotionType: string,
+  emotionStory: string
+) {
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("daily_logs")
+    .update({ emotion_type: emotionType, emotion_story: emotionStory })
+    .eq("id", logId);
+  if (error) throw new Error(error.message);
+  revalidatePath("/");
+}
+
 export async function getAIAnalysis(logId: string) {
   const supabase = await createClient();
   const { data } = await supabase
