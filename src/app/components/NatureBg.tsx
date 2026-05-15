@@ -1,5 +1,3 @@
-"use client";
-
 import Image from "next/image";
 
 // 교체하려면 아래 URL만 바꾸면 됩니다

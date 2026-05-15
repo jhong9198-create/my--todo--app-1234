@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Geist, Geist_Mono, Nanum_Brush_Script } from "next/font/google";
 import "./globals.css";
 import NatureBg from "@/app/components/NatureBg";
 
@@ -11,6 +11,12 @@ const geistSans = Geist({
 const geistMono = Geist_Mono({
   variable: "--font-geist-mono",
   subsets: ["latin"],
+});
+
+const nanumBrush = Nanum_Brush_Script({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-brush",
 });
 
 export const metadata: Metadata = {
@@ -26,7 +32,7 @@ export default function RootLayout({
   return (
     <html
       lang="ko"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} ${nanumBrush.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
         <NatureBg />
