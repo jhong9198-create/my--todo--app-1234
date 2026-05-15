@@ -22,29 +22,32 @@ export default async function Home() {
   });
 
   return (
-    <main className="min-h-screen py-8 px-4">
-      <div className="max-w-lg mx-auto space-y-5">
+    <main className="min-h-screen py-10 px-5">
+      <div className="max-w-lg mx-auto space-y-7">
 
-        {/* 캘리그라피 로고 헤더 */}
-        <CalligraphyLogo />
+        {/* 헤더 — 로고 좌측 + 날짜/네비 우측 */}
+        <div className="flex items-start justify-between gap-4">
+          <CalligraphyLogo />
 
-        {/* 날짜 + 네비 */}
-        <div className="flex items-center justify-between px-1">
-          <p className="text-xs text-stone-500 dark:text-stone-400">{today}</p>
-          <nav className="flex gap-1.5">
-            <Link
-              href="/history"
-              className="px-3 py-1.5 text-xs rounded-full bg-white/70 dark:bg-stone-800/70 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 hover:border-green-400 hover:text-green-700 dark:hover:text-green-400 transition-all backdrop-blur-sm"
-            >
-              기록
-            </Link>
-            <Link
-              href="/weekly"
-              className="px-3 py-1.5 text-xs rounded-full bg-white/70 dark:bg-stone-800/70 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 hover:border-green-400 hover:text-green-700 dark:hover:text-green-400 transition-all backdrop-blur-sm"
-            >
-              주간리포트
-            </Link>
-          </nav>
+          <div className="flex flex-col items-end justify-between h-[112px] py-1">
+            <nav className="flex gap-2">
+              <Link
+                href="/history"
+                className="px-3.5 py-1.5 text-xs rounded-full text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 transition-colors"
+                style={{ background: "rgba(255,255,255,0.55)", border: "1px solid rgba(160,140,115,0.22)" }}
+              >
+                기록
+              </Link>
+              <Link
+                href="/weekly"
+                className="px-3.5 py-1.5 text-xs rounded-full text-stone-500 dark:text-stone-400 hover:text-stone-800 dark:hover:text-stone-200 transition-colors"
+                style={{ background: "rgba(255,255,255,0.55)", border: "1px solid rgba(160,140,115,0.22)" }}
+              >
+                주간리포트
+              </Link>
+            </nav>
+            <p className="text-[11px] text-stone-400 dark:text-stone-500 tracking-wide">{today}</p>
+          </div>
         </div>
 
         {/* 4탭 홈 */}

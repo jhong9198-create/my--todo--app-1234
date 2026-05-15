@@ -2,10 +2,10 @@
 
 :root {
   --background: transparent;
-  --foreground: #2A2018;
-  --card: rgba(252,248,240,0.82);
-  --border: rgba(180,165,140,0.55);
-  --muted: #7A6A5A;
+  --foreground: #332d27;
+  --card: rgba(253, 249, 244, 0.86);
+  --border: rgba(175, 158, 135, 0.30);
+  --muted: #8a7d70;
 }
 
 @theme inline {
@@ -18,10 +18,10 @@
 @media (prefers-color-scheme: dark) {
   :root {
     --background: transparent;
-    --foreground: #EAE4D8;
-    --card: rgba(18,28,18,0.82);
-    --border: rgba(60,80,55,0.65);
-    --muted: #8A9A7A;
+    --foreground: #e8e2da;
+    --card: rgba(30, 26, 22, 0.84);
+    --border: rgba(75, 65, 52, 0.50);
+    --muted: #8a7d6e;
   }
 }
 
@@ -31,47 +31,47 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* 오가닉 카드 — 자연 유리 효과 */
+/* 오가닉 카드 — 웜화이트 */
 .organic-card {
-  background: rgba(252, 248, 238, 0.80);
-  border: 1px solid rgba(180, 160, 130, 0.45);
-  border-radius: 1.25rem;
+  background: rgba(253, 249, 244, 0.86);
+  border: 1px solid rgba(175, 155, 130, 0.28);
+  border-radius: 1.5rem;
   box-shadow:
-    0 2px 8px rgba(30,60,30,0.10),
-    0 8px 32px rgba(30,60,30,0.06),
-    inset 0 1px 0 rgba(255,255,255,0.6);
-  backdrop-filter: blur(14px) saturate(1.2);
+    0 1px 3px rgba(60,40,20,0.05),
+    0 4px 18px rgba(60,40,20,0.06),
+    inset 0 1px 0 rgba(255,255,255,0.65);
+  backdrop-filter: blur(16px) saturate(1.1);
 }
 @media (prefers-color-scheme: dark) {
   .organic-card {
-    background: rgba(12, 22, 14, 0.78);
-    border-color: rgba(60, 90, 55, 0.55);
+    background: rgba(28, 24, 20, 0.82);
+    border-color: rgba(70, 58, 44, 0.45);
     box-shadow:
-      0 2px 8px rgba(0,0,0,0.30),
-      0 8px 32px rgba(0,0,0,0.20),
-      inset 0 1px 0 rgba(255,255,255,0.04);
+      0 1px 3px rgba(0,0,0,0.25),
+      0 4px 18px rgba(0,0,0,0.18),
+      inset 0 1px 0 rgba(255,255,255,0.03);
   }
 }
 
 /* 프리미엄 카드 */
 .premium-card {
-  background: linear-gradient(135deg, rgba(245,235,210,0.85) 0%, rgba(230,248,235,0.85) 100%);
-  border: 1px solid rgba(100,160,100,0.45);
-  border-radius: 1.25rem;
+  background: linear-gradient(135deg, rgba(248,242,230,0.88) 0%, rgba(235,245,235,0.88) 100%);
+  border: 1px solid rgba(130,170,120,0.35);
+  border-radius: 1.5rem;
   box-shadow:
-    0 2px 8px rgba(30,80,40,0.12),
-    0 8px 32px rgba(30,80,40,0.08),
+    0 1px 4px rgba(40,80,40,0.08),
+    0 6px 24px rgba(40,80,40,0.07),
     inset 0 1px 0 rgba(255,255,255,0.65);
-  backdrop-filter: blur(14px) saturate(1.3);
+  backdrop-filter: blur(16px) saturate(1.2);
 }
 @media (prefers-color-scheme: dark) {
   .premium-card {
-    background: linear-gradient(135deg, rgba(15,30,20,0.85) 0%, rgba(20,40,25,0.85) 100%);
-    border-color: rgba(80,130,80,0.45);
+    background: linear-gradient(135deg, rgba(18,28,18,0.86) 0%, rgba(22,34,22,0.86) 100%);
+    border-color: rgba(80,120,75,0.40);
   }
 }
 
-/* 말풍선 슬라이드업 애니메이션 */
+/* 말풍선 슬라이드업 */
 @keyframes bubbleSlideUp {
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -80,7 +80,7 @@ body {
   animation: bubbleSlideUp 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) both;
 }
 
-/* 타이머 바 — 20초 동안 100→0% */
+/* 타이머 바 */
 @keyframes timerShrink {
   from { width: 100%; }
   to   { width: 0%; }
@@ -89,7 +89,7 @@ body {
   animation: timerShrink 20s linear forwards;
 }
 
-/* 오가닉 텍스처 — 미세한 그레인 오버레이 */
+/* 종이 그레인 오버레이 */
 body::before {
   content: "";
   position: fixed;
@@ -97,10 +97,10 @@ body::before {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
   pointer-events: none;
   z-index: 9999;
-  opacity: 0.4;
+  opacity: 0.35;
 }
 
-/* 프리미엄 히어로 shimmer */
+/* shimmer */
 @keyframes shimmer {
   0%   { transform: translateX(-100%); }
   100% { transform: translateX(200%); }
@@ -111,14 +111,4 @@ body::before {
   inset: 0;
   background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.12) 50%, transparent 100%);
   animation: shimmer 3s ease-in-out infinite;
-}
-
-/* 잎새 흔들림 */
-@keyframes leafSway {
-  0%, 100% { transform: rotate(-3deg); }
-  50%       { transform: rotate(3deg); }
-}
-.leaf-sway {
-  animation: leafSway 4s ease-in-out infinite;
-  transform-origin: bottom center;
 }
