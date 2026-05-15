@@ -1,15 +1,19 @@
 import Link from "next/link";
-import { getTodayLog, getAIAnalysis } from "@/app/actions";
+import { getTodayLog, getAIAnalysis, getWeightHistory } from "@/app/actions";
 import DailyLogForm from "@/app/components/DailyLogForm";
 import MealForm from "@/app/components/MealForm";
 import MealList from "@/app/components/MealList";
 import AIAnalysisPanel from "@/app/components/AIAnalysisPanel";
 import BingeMentoringCard from "@/app/components/BingeMentoringCard";
 import NutritionCoachPanel from "@/app/components/NutritionCoachPanel";
+import WeightGraph from "@/app/components/WeightGraph";
 import { MOOD_EMOJI } from "@/types/recovery";
 
 export default async function Home() {
-  const { log, meals } = await getTodayLog();
+  const [{ log, meals }, weightHistory] = await Promise.all([
+    getTodayLog(),
+    getWeightHistory(30),
+  ]);
   const analysis = log ? await getAIAnalysis(log.id) : null;
 
   const today = new Date().toLocaleDateString("ko-KR", {
@@ -41,6 +45,12 @@ export default async function Home() {
               className="px-3 py-1.5 text-xs rounded-full bg-white/70 dark:bg-stone-800/70 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 hover:border-green-400 hover:text-green-700 dark:hover:text-green-400 transition-all backdrop-blur-sm"
             >
               기록
+            </Link>
+            <Link
+              href="/weekly"
+              className="px-3 py-1.5 text-xs rounded-full bg-white/70 dark:bg-stone-800/70 border border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400 hover:border-green-400 hover:text-green-700 dark:hover:text-green-400 transition-all backdrop-blur-sm"
+            >
+              주간리포트
             </Link>
             <Link
               href="/report"
@@ -163,6 +173,22 @@ export default async function Home() {
             <NutritionCoachPanel logId={log.id} existing={analysis} />
           </section>
         )}
+
+        {/* 체중 그래프 */}
+        <section className="organic-card p-5">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <span className="text-base">⚖️</span>
+              <h2 className="text-base font-semibold text-stone-800 dark:text-stone-100">
+                체중 변화
+              </h2>
+            </div>
+            {weightHistory.length > 0 && (
+              <span className="text-xs text-stone-400">{weightHistory.length}일 기록</span>
+            )}
+          </div>
+          <WeightGraph data={weightHistory} />
+        </section>
 
         {/* AI 행동 코칭 */}
         {log && (

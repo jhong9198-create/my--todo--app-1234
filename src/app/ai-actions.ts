@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import { getRecentLogs } from "@/app/actions";
+import { getRecentLogs, calculateWeeklyGrade } from "@/app/actions";
 import Anthropic from "@anthropic-ai/sdk";
 
 const anthropic = new Anthropic();
@@ -363,6 +363,141 @@ export async function getBingeMentoring(
   } catch {
     return buildFallbackMentoring(mood, stress, latestMeal);
   }
+}
+
+export async function generateWeeklyReport() {
+  const supabase = await createClient();
+  const logs = await getRecentLogs(7);
+
+  if (logs.length === 0) throw new Error("최근 7일 기록이 없습니다.");
+
+  const gradeData = calculateWeeklyGrade(logs);
+
+  // 주간 날짜 범위
+  const dates = logs.map((l) => l.date).sort();
+  const weekStart = dates[0];
+  const weekEnd = dates[dates.length - 1];
+
+  const bingeCount = logs.reduce((acc, l) => acc + l.meals.filter((m) => m.is_binge).length, 0);
+  const avgMood = (logs.reduce((acc, l) => acc + l.mood, 0) / logs.length).toFixed(1);
+  const avgStress = (logs.reduce((acc, l) => acc + l.stress_level, 0) / logs.length).toFixed(1);
+  const sleepLogs = logs.filter((l) => l.sleep_hours != null);
+  const avgSleep = sleepLogs.length > 0
+    ? (sleepLogs.reduce((acc, l) => acc + (l.sleep_hours ?? 0), 0) / sleepLogs.length).toFixed(1)
+    : "미기록";
+  const totalMeals = logs.reduce((acc, l) => acc + l.meals.length, 0);
+  const weightLogs = logs.filter((l) => l.weight_kg != null);
+  const weightTrend = weightLogs.length >= 2
+    ? `${weightLogs[weightLogs.length - 1].weight_kg}kg (첫날 ${weightLogs[0].weight_kg}kg)`
+    : weightLogs.length === 1 ? `${weightLogs[0].weight_kg}kg` : "미기록";
+
+  const prompt = `당신은 비만·식습관 교정 전문 교수입니다. 학생(사용자)의 지난 7일 식습관 데이터를 평가하여 대학 학점 보고서를 작성해주세요.
+
+## 이번 주 데이터 (${weekStart} ~ ${weekEnd})
+- 기록 일수: ${logs.length}일
+- 폭식 에피소드: ${bingeCount}회
+- 평균 기분: ${avgMood}/5
+- 평균 스트레스: ${avgStress}/5
+- 평균 수면: ${avgSleep}시간
+- 총 식사 기록: ${totalMeals}회 (하루 평균 ${(totalMeals / logs.length).toFixed(1)}끼)
+- 체중: ${weightTrend}
+
+## 산출된 학점
+- 최종 학점: ${gradeData.grade} (${gradeData.score}점/100점)
+- 폭식 점수: ${gradeData.binge_score}/35
+- 식사 규칙성: ${gradeData.meal_score}/25
+- 기분 점수: ${gradeData.mood_score}/15
+- 수면 점수: ${gradeData.sleep_score}/15
+- 스트레스: ${gradeData.stress_score}/10
+
+다음 형식으로 응답해주세요:
+
+===교수평가===
+교수가 학생에게 쓰는 학점 평가서 형식으로 작성. 이 학생의 이번 주 식습관을 구체적 데이터를 언급하며 평가. 잘한 점과 부족한 점을 균형 있게. 따뜻하지만 솔직하게. (4-5문장)
+
+===개선과제===
+다음 주 반드시 실천해야 할 구체적 과제 3가지. 번호 매기기. 각 과제는 측정 가능하고 달성 가능한 형태로.`;
+
+  try {
+    const message = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 600,
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    const content = message.content[0].type === "text" ? message.content[0].text : "";
+    const extract = (section: string) => {
+      const regex = new RegExp(`===${section}===\\s*([\\s\\S]*?)(?====|$)`);
+      const match = content.match(regex);
+      return match ? match[1].trim() : null;
+    };
+
+    const evaluation = extract("교수평가");
+    const tasks = extract("개선과제");
+    const ai_feedback = [evaluation, tasks ? `\n개선 과제:\n${tasks}` : ""].filter(Boolean).join("\n\n");
+
+    const reportPayload = {
+      week_start: weekStart,
+      week_end: weekEnd,
+      grade: gradeData.grade,
+      grade_score: gradeData.score,
+      binge_score: gradeData.binge_score,
+      meal_score: gradeData.meal_score,
+      mood_score: gradeData.mood_score,
+      sleep_score: gradeData.sleep_score,
+      stress_score: gradeData.stress_score,
+      evaluation,
+      ai_feedback,
+    };
+
+    await supabase
+      .from("weekly_reports")
+      .upsert(reportPayload, { onConflict: "week_start" });
+
+    revalidatePath("/weekly");
+    return reportPayload;
+  } catch {
+    const ai_feedback = buildFallbackWeeklyFeedback(gradeData.grade, gradeData.score, bingeCount, Number(avgStress));
+    const reportPayload = {
+      week_start: weekStart,
+      week_end: weekEnd,
+      grade: gradeData.grade,
+      grade_score: gradeData.score,
+      binge_score: gradeData.binge_score,
+      meal_score: gradeData.meal_score,
+      mood_score: gradeData.mood_score,
+      sleep_score: gradeData.sleep_score,
+      stress_score: gradeData.stress_score,
+      evaluation: ai_feedback,
+      ai_feedback,
+    };
+    await supabase
+      .from("weekly_reports")
+      .upsert(reportPayload, { onConflict: "week_start" });
+    revalidatePath("/weekly");
+    return reportPayload;
+  }
+}
+
+function buildFallbackWeeklyFeedback(grade: string, score: number, bingeCount: number, avgStress: number): string {
+  const gradeMsg = grade.startsWith("A")
+    ? "이번 주 식습관 관리에서 매우 우수한 성과를 보여주었습니다."
+    : grade.startsWith("B")
+    ? "이번 주 전반적으로 양호한 식습관을 유지하였으나 개선 여지가 있습니다."
+    : grade.startsWith("C")
+    ? "이번 주 식습관이 보통 수준이며 몇 가지 중요한 개선이 필요합니다."
+    : "이번 주 식습관에 상당한 개선이 필요합니다. 하지만 기록 자체가 변화의 시작입니다.";
+
+  const bingeMsg = bingeCount === 0
+    ? "특히 폭식 에피소드 없이 한 주를 마친 점이 매우 인상적입니다."
+    : `폭식이 ${bingeCount}회 발생한 점은 다음 주 최우선 개선 과제입니다.`;
+
+  return `${gradeMsg} ${bingeMsg} ${avgStress >= 4 ? "스트레스 수준이 높게 유지되고 있어 스트레스 관리가 식습관 개선의 선결 조건으로 보입니다." : ""}
+
+개선 과제:
+1. ${bingeCount > 0 ? "폭식 충동이 올 때 STOP 기법(멈추기→호흡→관찰→진행) 실천하기" : "현재의 규칙적 식사 패턴을 다음 주도 유지하기"}
+2. 매일 아침·점심·저녁 3끼를 일정한 시간에 섭취하기
+3. 식사 일기에 먹기 전 신호(Cue)와 감정을 반드시 기록하기`;
 }
 
 // ── 폴백 빌더 함수들 ──────────────────────────────────────────────

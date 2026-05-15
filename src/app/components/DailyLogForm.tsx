@@ -132,6 +132,27 @@ export default function DailyLogForm({ existing }: Props) {
         </div>
       </div>
 
+      {/* 체중 */}
+      <div>
+        <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">
+          오늘 체중 <span className="text-stone-400 font-normal text-xs">(선택)</span>
+        </label>
+        <div className="relative">
+          <input
+            name="weight_kg"
+            type="number"
+            step="0.1"
+            min="20"
+            max="300"
+            defaultValue={existing?.weight_kg ?? ""}
+            placeholder="예: 68.5"
+            className={`pr-8 ${inputCls}`}
+          />
+          <span className="absolute right-3 top-2 text-xs text-stone-400">kg</span>
+        </div>
+        <p className="text-xs text-stone-400 mt-1">아침 공복 측정값을 입력하면 체중 그래프에 기록됩니다</p>
+      </div>
+
       {/* 메모 */}
       <div>
         <label className="block text-sm font-medium text-stone-700 dark:text-stone-300 mb-1">

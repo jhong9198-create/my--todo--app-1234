@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
-import type { DailyLog, Meal } from "@/types/recovery";
+import type { DailyLog, Meal, WeeklyReport, Grade } from "@/types/recovery";
 
 export async function getTodayLog(): Promise<{
   log: DailyLog | null;
@@ -44,15 +44,53 @@ export async function getRecentLogs(limit = 7): Promise<
   const { data: meals } = await supabase
     .from("meals")
     .select("*")
-    .in(
-      "log_id",
-      logs.map((l) => l.id)
-    );
+    .in("log_id", logs.map((l) => l.id));
 
   return logs.map((log) => ({
     ...log,
     meals: (meals ?? []).filter((m) => m.log_id === log.id),
   }));
+}
+
+export async function getWeightHistory(days = 30): Promise<
+  { date: string; weight_kg: number }[]
+> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("daily_logs")
+    .select("date, weight_kg")
+    .not("weight_kg", "is", null)
+    .order("date", { ascending: true })
+    .limit(days);
+
+  return (data ?? []) as { date: string; weight_kg: number }[];
+}
+
+export async function getWeeklyLogs(): Promise<
+  (DailyLog & { meals: Meal[] })[]
+> {
+  return getRecentLogs(7);
+}
+
+export async function getLatestWeeklyReport(): Promise<WeeklyReport | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("weekly_reports")
+    .select("*")
+    .order("week_start", { ascending: false })
+    .limit(1)
+    .single();
+  return data as WeeklyReport | null;
+}
+
+export async function getPastWeeklyReports(limit = 8): Promise<WeeklyReport[]> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("weekly_reports")
+    .select("*")
+    .order("week_start", { ascending: false })
+    .limit(limit);
+  return (data ?? []) as WeeklyReport[];
 }
 
 export async function upsertDailyLog(formData: FormData) {
@@ -63,14 +101,11 @@ export async function upsertDailyLog(formData: FormData) {
     date: today,
     mood: Number(formData.get("mood")),
     mood_note: (formData.get("mood_note") as string) || null,
-    sleep_hours: formData.get("sleep_hours")
-      ? Number(formData.get("sleep_hours"))
-      : null,
-    sleep_quality: formData.get("sleep_quality")
-      ? Number(formData.get("sleep_quality"))
-      : null,
+    sleep_hours: formData.get("sleep_hours") ? Number(formData.get("sleep_hours")) : null,
+    sleep_quality: formData.get("sleep_quality") ? Number(formData.get("sleep_quality")) : null,
     stress_level: Number(formData.get("stress_level")),
     notes: (formData.get("notes") as string) || null,
+    weight_kg: formData.get("weight_kg") ? Number(formData.get("weight_kg")) : null,
   };
 
   const { error } = await supabase
@@ -121,4 +156,66 @@ export async function getAIAnalysis(logId: string) {
     .eq("log_id", logId)
     .single();
   return data;
+}
+
+// ── 학점 계산 유틸 (서버/클라이언트 공통) ───────────────────────────
+
+export function calculateWeeklyGrade(
+  logs: (DailyLog & { meals: Meal[] })[]
+): {
+  grade: Grade;
+  score: number;
+  binge_score: number;
+  meal_score: number;
+  mood_score: number;
+  sleep_score: number;
+  stress_score: number;
+} {
+  if (logs.length === 0) {
+    return { grade: "F", score: 0, binge_score: 0, meal_score: 0, mood_score: 0, sleep_score: 0, stress_score: 0 };
+  }
+
+  const bingeCount = logs.reduce((acc, l) => acc + l.meals.filter((m) => m.is_binge).length, 0);
+  const avgMood = logs.reduce((acc, l) => acc + l.mood, 0) / logs.length;
+  const avgStress = logs.reduce((acc, l) => acc + l.stress_level, 0) / logs.length;
+  const sleepLogs = logs.filter((l) => l.sleep_hours != null);
+  const avgSleep = sleepLogs.length > 0
+    ? sleepLogs.reduce((acc, l) => acc + (l.sleep_hours ?? 0), 0) / sleepLogs.length
+    : null;
+  const totalMeals = logs.reduce((acc, l) => acc + l.meals.length, 0);
+  const avgMealsPerDay = totalMeals / logs.length;
+
+  // 폭식 점수 (35점): 0회=35, 1회=25, 2회=15, 3회=5, 4+회=0
+  const binge_score = Math.max(0, 35 - bingeCount * 10);
+
+  // 식사 규칙성 점수 (25점): 평균 3끼=25점
+  const meal_score = Math.min(25, Math.round((avgMealsPerDay / 3) * 25));
+
+  // 기분 평균 점수 (15점)
+  const mood_score = Math.round((avgMood / 5) * 15);
+
+  // 수면 점수 (15점)
+  let sleep_score = 8;
+  if (avgSleep !== null) {
+    if (avgSleep >= 7 && avgSleep <= 9) sleep_score = 15;
+    else if (avgSleep >= 6 && avgSleep < 7) sleep_score = 10;
+    else if (avgSleep > 9 && avgSleep <= 10) sleep_score = 10;
+    else sleep_score = 5;
+  }
+
+  // 스트레스 점수 (10점)
+  const stress_score = Math.round(((5 - avgStress) / 4) * 10);
+
+  const score = Math.min(100, binge_score + meal_score + mood_score + sleep_score + stress_score);
+
+  let grade: Grade = "F";
+  if (score >= 90) grade = "A+";
+  else if (score >= 80) grade = "A";
+  else if (score >= 70) grade = "B+";
+  else if (score >= 60) grade = "B";
+  else if (score >= 50) grade = "C+";
+  else if (score >= 40) grade = "C";
+  else if (score >= 30) grade = "D";
+
+  return { grade, score, binge_score, meal_score, mood_score, sleep_score, stress_score };
 }

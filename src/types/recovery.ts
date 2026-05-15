@@ -45,6 +45,25 @@ export interface DailyLog {
   sleep_quality: MoodLevel | null;
   stress_level: MoodLevel;
   notes: string | null;
+  weight_kg: number | null;
+  created_at: string;
+}
+
+export type Grade = "A+" | "A" | "B+" | "B" | "C+" | "C" | "D" | "F";
+
+export interface WeeklyReport {
+  id: string;
+  week_start: string;
+  week_end: string;
+  grade: Grade;
+  grade_score: number;
+  binge_score: number | null;
+  meal_score: number | null;
+  mood_score: number | null;
+  sleep_score: number | null;
+  stress_score: number | null;
+  evaluation: string | null;
+  ai_feedback: string | null;
   created_at: string;
 }
 
