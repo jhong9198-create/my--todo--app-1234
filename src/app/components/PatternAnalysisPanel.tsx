@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import Link from "next/link";
 import WeightGraph from "./WeightGraph";
 import AIAnalysisPanel from "./AIAnalysisPanel";
+import PremiumGate from "./PremiumGate";
 import { getPatternInsights } from "@/app/ai-actions";
 import type { DailyLog, Meal, AIAnalysis } from "@/types/recovery";
 
@@ -167,6 +168,82 @@ export default function PatternAnalysisPanel({ log, analysis, weightHistory, rec
         <h3 className="text-sm font-semibold text-stone-700 dark:text-stone-300 mb-3">⚖️ 체중 변화</h3>
         <WeightGraph data={weightHistory} />
       </div>
+
+      {/* 스트레스 & 식습관 연결 — 프리미엄 */}
+      <PremiumGate
+        feature="스트레스 & 식습관 연결"
+        description="스트레스 수준이 식습관에 어떤 영향을 주는지 데이터로 분석해요"
+      >
+        <div className="p-5 space-y-4">
+          <div className="flex items-center gap-2">
+            <span className="text-base">🔗</span>
+            <h3 className="text-sm font-semibold text-stone-700 dark:text-stone-300">스트레스 & 식습관 연결</h3>
+          </div>
+
+          {/* 스트레스 단계별 폭식 발생률 */}
+          <div className="space-y-2.5">
+            {[1, 2, 3, 4, 5].map((level) => {
+              const logsAtLevel = recentLogs.filter((l) => l.stress_level === level);
+              const bingedays = logsAtLevel.filter((l) => l.meals.some((m) => m.is_binge)).length;
+              const rate = logsAtLevel.length > 0 ? bingedays / logsAtLevel.length : 0;
+              const pct = Math.round(rate * 100);
+              const barColor =
+                level >= 4 ? "bg-red-400" : level === 3 ? "bg-amber-400" : "bg-emerald-400";
+              const label =
+                level === 1 ? "없음" : level === 2 ? "약함" : level === 3 ? "보통" : level === 4 ? "강함" : "극심함";
+              return (
+                <div key={level} className="flex items-center gap-2">
+                  <div className="w-14 shrink-0">
+                    <span className="text-[10px] text-stone-400">{label}</span>
+                  </div>
+                  <div className="flex-1 h-3 bg-stone-100 dark:bg-stone-700 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full ${barColor} rounded-full`}
+                      style={{ width: logsAtLevel.length > 0 ? `${pct}%` : "0%", minWidth: logsAtLevel.length > 0 ? "4px" : "0", transition: "width 0.8s ease" }}
+                    />
+                  </div>
+                  <div className="w-16 shrink-0 text-right">
+                    {logsAtLevel.length > 0 ? (
+                      <span className="text-[10px] text-stone-400">
+                        {pct}% <span className="text-stone-300 dark:text-stone-600">({logsAtLevel.length}일)</span>
+                      </span>
+                    ) : (
+                      <span className="text-[10px] text-stone-300 dark:text-stone-600">데이터 없음</span>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <p className="text-[10px] text-stone-400 dark:text-stone-500">
+            각 스트레스 단계에서 폭식이 있었던 날의 비율
+          </p>
+
+          {/* 인사이트 텍스트 */}
+          {(() => {
+            const high = recentLogs.filter((l) => l.stress_level >= 4);
+            const low = recentLogs.filter((l) => l.stress_level <= 2);
+            const highBinge = high.filter((l) => l.meals.some((m) => m.is_binge)).length;
+            const lowBinge = low.filter((l) => l.meals.some((m) => m.is_binge)).length;
+            const highRate = high.length > 0 ? highBinge / high.length : 0;
+            const lowRate = low.length > 0 ? lowBinge / low.length : 0;
+            if (high.length < 2 && low.length < 2) return null;
+            const diff = highRate - lowRate;
+            return (
+              <div
+                className="rounded-xl p-3 text-xs text-stone-600 dark:text-stone-300 leading-relaxed"
+                style={{ background: "rgba(99,102,241,0.06)", border: "1px solid rgba(99,102,241,0.12)" }}
+              >
+                {diff > 0.2
+                  ? `스트레스가 높은 날, 폭식 가능성이 ${Math.round(diff * 100)}%p 더 높아요. 스트레스 관리가 식습관 교정의 핵심이에요.`
+                  : diff > 0
+                  ? "스트레스와 폭식 사이에 약한 연관성이 보여요. 기록을 이어가면 패턴이 더 뚜렷해져요."
+                  : "현재 데이터에서는 스트레스 수준과 폭식의 뚜렷한 연관성이 보이지 않아요."}
+              </div>
+            );
+          })()}
+        </div>
+      </PremiumGate>
 
       {/* AI 행동 코칭 */}
       {log && (

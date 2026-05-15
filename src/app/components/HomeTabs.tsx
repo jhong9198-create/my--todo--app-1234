@@ -9,6 +9,9 @@ import BingeMentoringCard from "./BingeMentoringCard";
 import NutritionCoachPanel from "./NutritionCoachPanel";
 import EmotionJournalCard from "./EmotionJournalCard";
 import PatternAnalysisPanel from "./PatternAnalysisPanel";
+import RecoveryScoreCard from "./RecoveryScoreCard";
+import BingeRiskCard from "./BingeRiskCard";
+import AIEmpathyCard from "./AIEmpathyCard";
 import { MOOD_EMOJI } from "@/types/recovery";
 import type { DailyLog, Meal, AIAnalysis } from "@/types/recovery";
 
@@ -32,6 +35,28 @@ interface Props {
 export default function HomeTabs({ log, meals, analysis, weightHistory, recentLogs }: Props) {
   const [active, setActive] = useState<TabId>("status");
   const bingeMeals = meals.filter((m) => m.is_binge);
+
+  // 연속 기록 일수 계산
+  const streak = (() => {
+    const logDates = new Set([
+      ...recentLogs.map((l) => l.date),
+      ...(log ? [log.date] : []),
+    ]);
+    let count = 0;
+    const today = new Date();
+    const todayStr = today.toISOString().slice(0, 10);
+    // 오늘 기록이 없으면 어제부터 역산
+    const checkFrom = new Date(today);
+    if (!logDates.has(todayStr)) checkFrom.setDate(checkFrom.getDate() - 1);
+    while (count < 30) {
+      const d = checkFrom.toISOString().slice(0, 10);
+      if (logDates.has(d)) {
+        count++;
+        checkFrom.setDate(checkFrom.getDate() - 1);
+      } else break;
+    }
+    return count;
+  })();
 
   return (
     <div>
@@ -90,6 +115,15 @@ export default function HomeTabs({ log, meals, analysis, weightHistory, recentLo
               />
             </div>
           )}
+
+          {/* 회복점수 + 연속 배지 */}
+          <RecoveryScoreCard log={log} meals={meals} streak={streak} />
+
+          {/* AI 공감 메시지 (프리미엄) */}
+          <AIEmpathyCard log={log} />
+
+          {/* 폭식 위험 예측 (프리미엄) */}
+          <BingeRiskCard log={log} meals={meals} recentLogs={recentLogs} />
 
           <ExerciseCard />
 

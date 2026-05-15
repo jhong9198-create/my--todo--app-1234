@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import NatureBg from "@/app/components/NatureBg";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,8 +14,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "회복 일지 🌸",
-  description: "식습관 교정 & 회복 트래킹 앱",
+  title: "곁 — 무너진 날에도, 다시 내 곁으로",
+  description: "무너진 날에도, 다시 내 곁으로 돌아오는 기록",
 };
 
 export default function RootLayout({
@@ -27,7 +28,10 @@ export default function RootLayout({
       lang="ko"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <NatureBg />
+        {children}
+      </body>
     </html>
   );
 }

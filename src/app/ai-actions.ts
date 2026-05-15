@@ -862,3 +862,75 @@ export async function getPatternInsights(): Promise<string> {
     return JSON.stringify({ patterns, key: "스트레스 수치가 4 이상인 날 저녁 루틴을 미리 계획해두는 것이 효과적이에요" });
   }
 }
+
+// ── 프리미엄: AI 회복 루틴 추천 ────────────────────────────────────
+
+export async function getRecoveryRoutine(): Promise<string> {
+  const logs = await getRecentLogs(7);
+  if (logs.length === 0) return JSON.stringify({ sleep: null, exercise: null, meal: null, message: null });
+
+  const avgSleep = (() => {
+    const sl = logs.filter(l => l.sleep_hours != null);
+    return sl.length > 0 ? sl.reduce((a, l) => a + (l.sleep_hours ?? 0), 0) / sl.length : null;
+  })();
+  const avgStress = logs.reduce((a, l) => a + l.stress_level, 0) / logs.length;
+  const avgMood   = logs.reduce((a, l) => a + l.mood, 0) / logs.length;
+  const bingeCount = logs.reduce((a, l) => a + l.meals.filter(m => m.is_binge).length, 0);
+  const emotionTypes = logs.map(l => l.emotion_type).filter(Boolean).join(", ") || "미기록";
+  const topReasons = logs.flatMap(l => l.meals.map(m => m.emotional_state)).filter(Boolean).slice(0, 10).join(" | ");
+
+  const prompt = `당신은 식습관·수면·감정 회복 전문 코치입니다.
+사용자의 최근 7일 데이터를 분석하여 현실적이고 실천 가능한 회복 루틴을 제안해주세요.
+
+최근 7일 데이터:
+- 평균 수면: ${avgSleep ? avgSleep.toFixed(1) + "시간" : "미기록"}
+- 평균 스트레스: ${avgStress.toFixed(1)}/5
+- 평균 기분: ${avgMood.toFixed(1)}/5
+- 폭식 횟수: ${bingeCount}회
+- 주요 감정: ${emotionTypes}
+- 식사 이유 패턴: ${topReasons || "미기록"}
+
+아래 형식으로 각 루틴을 2-3문장으로 구체적이고 현실적으로 (과도하지 않게) 작성:
+
+===수면회복===
+수면 패턴 개선을 위한 구체적 루틴 (취침 루틴, 시간 등)
+
+===운동루틴===
+저강도/중강도 운동 루틴 (구체적 운동명 + 시간 + 빈도, 현실적으로)
+
+===식단제안===
+내일 하루 현실적인 식단 제안 (아침/점심/저녁 각 1가지, 간단하고 실천 가능하게)
+
+===회복메시지===
+지금 상태에서의 따뜻한 회복 메시지 (1-2문장)`;
+
+  try {
+    const msg = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 500,
+      messages: [{ role: "user", content: prompt }],
+    });
+    const text = msg.content[0].type === "text" ? msg.content[0].text : "";
+    const extract = (s: string) => {
+      const m = text.match(new RegExp(`===${s}===\\s*([\\s\\S]*?)(?====|$)`));
+      return m ? m[1].trim() : null;
+    };
+    return JSON.stringify({
+      sleep:    extract("수면회복"),
+      exercise: extract("운동루틴"),
+      meal:     extract("식단제안"),
+      message:  extract("회복메시지"),
+    });
+  } catch {
+    // 규칙 기반 폴백
+    const sleep = avgSleep && avgSleep < 7
+      ? "매일 밤 10시 30분에 스크린을 끄고 11시에 누워보세요. 취침 30분 전 따뜻한 물 한 잔과 3분 복식호흡이 수면 진입을 도와요."
+      : "지금 수면 시간은 양호해요. 취침/기상 시간을 일정하게 유지하는 것이 핵심이에요.";
+    const exercise = avgStress >= 4
+      ? "오늘은 10분 걷기부터 시작해요. 빠른 걸음으로 동네 한 바퀴 (15-20분). 격렬한 운동은 스트레스 높을 때 역효과가 날 수 있어요."
+      : "30분 유산소 (걷기+계단 인터벌) + 스쿼트 15회×3세트. 주 3-4회 목표로 시작해보세요.";
+    const meal = "아침: 통곡물빵 1장 + 달걀 1개 + 우유\n점심: 잡곡밥 + 된장국 + 채소 반찬 2가지\n저녁: 닭가슴살 100g + 야채샐러드 + 고구마 반 개";
+    const message = "완벽한 루틴보다 작은 실천 하나가 더 강력해요. 오늘 이 루틴 중 딱 하나만 해보는 걸로 시작해요.";
+    return JSON.stringify({ sleep, exercise, meal, message });
+  }
+}

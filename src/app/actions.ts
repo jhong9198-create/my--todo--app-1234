@@ -148,6 +148,19 @@ export async function deleteMeal(id: string) {
   revalidatePath("/");
 }
 
+export async function getEmotionHistory(limit = 30): Promise<
+  { id: string; date: string; emotion_type: string | null; emotion_story: string | null; ai_comfort: string | null; recovery_message: string | null; mood: number; stress_level: number }[]
+> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("daily_logs")
+    .select("id, date, emotion_type, emotion_story, ai_comfort, recovery_message, mood, stress_level")
+    .not("emotion_type", "is", null)
+    .order("date", { ascending: false })
+    .limit(limit);
+  return (data ?? []) as { id: string; date: string; emotion_type: string | null; emotion_story: string | null; ai_comfort: string | null; recovery_message: string | null; mood: number; stress_level: number }[];
+}
+
 export async function saveEmotionJournal(
   logId: string,
   emotionType: string,

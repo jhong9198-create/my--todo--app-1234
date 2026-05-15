@@ -27,10 +27,13 @@ export default async function Home() {
         {/* 헤더 */}
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-stone-800 dark:text-stone-100 tracking-tight">
-              🌿 행동변화 코치
+            <h1 className="text-3xl font-black text-stone-800 dark:text-stone-100 tracking-tight leading-none">
+              곁
             </h1>
-            <p className="text-sm text-stone-500 dark:text-stone-400 mt-0.5">{today}</p>
+            <p className="text-[11px] text-stone-500 dark:text-stone-400 mt-1 leading-relaxed">
+              무너진 날에도, 다시 내 곁으로 돌아오는 기록
+            </p>
+            <p className="text-xs text-stone-400 dark:text-stone-500 mt-0.5">{today}</p>
           </div>
           <nav className="flex gap-1.5">
             <Link
