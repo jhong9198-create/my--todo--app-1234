@@ -69,6 +69,9 @@ export interface AIAnalysis {
   today_comment: string | null;
   tomorrow_routine: string | null;
   pattern_report: string | null;
+  weight_factors: string | null;
+  food_alternatives: string | null;
+  eating_mentoring: string | null;
   created_at: string;
 }
 

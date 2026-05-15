@@ -133,6 +133,191 @@ ${mealSummary || "  (식사 기록 없음)"}
   }
 }
 
+export async function getNutritionCoaching(logId: string) {
+  const supabase = await createClient();
+
+  const { data: log } = await supabase
+    .from("daily_logs")
+    .select("*")
+    .eq("id", logId)
+    .single();
+
+  const { data: meals } = await supabase
+    .from("meals")
+    .select("*")
+    .eq("log_id", logId)
+    .order("meal_time");
+
+  const recentLogs = await getRecentLogs(14);
+
+  const todayMeals = meals ?? [];
+  const bingeMeals = todayMeals.filter((m: { is_binge: boolean }) => m.is_binge);
+
+  const mealSummary = todayMeals
+    .map(
+      (m: { meal_time: string; food_items: string; is_binge: boolean; emotional_state: string | null; location: string | null }) =>
+        `${m.meal_time.slice(0, 5)} [${m.food_items}]${m.is_binge ? " ⚠️폭식" : ""}${m.emotional_state ? ` 감정:${m.emotional_state}` : ""}${m.location ? ` @${m.location}` : ""}`
+    )
+    .join("\n");
+
+  const recentMealPatterns = recentLogs.slice(0, 7).flatMap((l) =>
+    l.meals.map((m) => m.food_items)
+  ).slice(0, 30).join(", ");
+
+  const avgStress =
+    recentLogs.length > 0
+      ? recentLogs.reduce((acc, l) => acc + l.stress_level, 0) / recentLogs.length
+      : log?.stress_level ?? 3;
+
+  const totalBinge = recentLogs.reduce(
+    (acc, l) => acc + l.meals.filter((m) => m.is_binge).length,
+    0
+  );
+
+  const prompt = `당신은 비만·폭식·식습관 교정 전문 영양 코치이자 행동변화 전문가입니다.
+사용자의 식사 기록을 정밀 분석하여 살찌는 요인, 대체 음식, 식습관 교정 멘토링을 제공해주세요.
+
+## 오늘 식사 기록
+${mealSummary || "(식사 기록 없음)"}
+
+## 컨디션
+- 기분: ${log?.mood ?? 3}/5, 스트레스: ${log?.stress_level ?? 3}/5, 수면: ${log?.sleep_hours ? `${log.sleep_hours}h` : "미기록"}
+- 오늘 폭식: ${bingeMeals.length}회
+- 최근 14일 총 폭식: ${totalBinge}회
+- 평균 스트레스: ${avgStress.toFixed(1)}/5
+
+## 최근 7일 주요 식품
+${recentMealPatterns || "(데이터 없음)"}
+
+아래 형식을 정확히 지켜 응답해주세요. 각 섹션은 ===섹션명=== 구분자로 시작:
+
+===살찌는요인===
+이 사람의 식사 기록에서 체중 증가·비만을 유발하는 구체적 요인들:
+각 요인을 다음 형식으로:
+[요인명]: 구체적 설명과 왜 살이 찌는지 과학적 근거 (한 줄)
+
+최소 4가지, 이 사람의 실제 기록 데이터 기반으로 작성.
+
+===대체음식추천===
+위에서 문제가 된 음식들의 건강한 대체 식품 추천:
+각 항목을 다음 형식으로:
+❌ [문제 음식] → ✅ [대체 음식]: 이유 (칼로리/영양 비교 포함)
+
+최소 4가지, 실제 언급된 음식 기반으로 (없으면 일반적인 한국식 폭식 음식 기준).
+
+===식습관멘토링===
+비만 교정과 올바른 식습관 형성을 위한 개인화된 멘토링:
+이 사람의 구체적 패턴(폭식 ${totalBinge}회, 스트레스 ${avgStress.toFixed(1)}/5 등)을 반영하여
+실천 가능한 핵심 원칙 4가지를 번호로 제시.
+각 원칙에 과학적 근거와 구체적 실천법 포함. 따뜻하고 실용적인 코치 톤으로.`;
+
+  try {
+    const message = await anthropic.messages.create({
+      model: "claude-sonnet-4-6",
+      max_tokens: 1500,
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    const content = message.content[0].type === "text" ? message.content[0].text : "";
+
+    const extract = (section: string) => {
+      const regex = new RegExp(`===${section}===\\s*([\\s\\S]*?)(?====|$)`);
+      const match = content.match(regex);
+      return match ? match[1].trim() : null;
+    };
+
+    const result = {
+      weight_factors: extract("살찌는요인") ?? buildFallbackWeightFactors(todayMeals, log?.stress_level ?? 3, log?.sleep_hours),
+      food_alternatives: extract("대체음식추천") ?? buildFallbackFoodAlternatives(todayMeals),
+      eating_mentoring: extract("식습관멘토링") ?? buildFallbackEatingMentoring(totalBinge, avgStress),
+    };
+
+    await supabase
+      .from("ai_analyses")
+      .upsert({ log_id: logId, ...result }, { onConflict: "log_id" });
+
+    revalidatePath("/");
+    return result;
+  } catch {
+    const result = {
+      weight_factors: buildFallbackWeightFactors(todayMeals, log?.stress_level ?? 3, log?.sleep_hours),
+      food_alternatives: buildFallbackFoodAlternatives(todayMeals),
+      eating_mentoring: buildFallbackEatingMentoring(totalBinge, avgStress),
+    };
+    await supabase
+      .from("ai_analyses")
+      .upsert({ log_id: logId, ...result }, { onConflict: "log_id" });
+    revalidatePath("/");
+    return result;
+  }
+}
+
+// ── 영양 코칭 폴백 함수들 ──────────────────────────────────────────
+
+function buildFallbackWeightFactors(
+  meals: Array<{ food_items: string; meal_time: string; is_binge: boolean; location: string | null }>,
+  stress: number,
+  sleepHours: number | null
+): string {
+  const factors: string[] = [];
+  const hasLateMeal = meals.some((m) => parseInt(m.meal_time.split(":")[0]) >= 21);
+  const hasNoBreakfast = !meals.some((m) => parseInt(m.meal_time.split(":")[0]) <= 9);
+  const hasBinge = meals.some((m) => m.is_binge);
+  const foodText = meals.map((m) => m.food_items).join(" ").toLowerCase();
+
+  if (hasBinge) factors.push("[폭식 패턴]: 단시간 대량 섭취로 인슐린이 급격히 분비되어 지방 합성이 촉진됩니다. 폭식 후 죄책감-절식-폭식의 악순환이 기초대사율을 낮춥니다.");
+  if (hasLateMeal) factors.push("[야식 섭취]: 밤 9시 이후 식사는 활동량 감소로 칼로리 소비가 거의 없고, 수면 중 지방으로 전환되는 비율이 낮 시간 대비 2배 이상입니다.");
+  if (hasNoBreakfast) factors.push("[아침 결식]: 아침을 굶으면 점심·저녁에 과식 충동이 강해지고 기초대사율이 낮아져 오히려 체중 증가로 이어집니다.");
+  if (stress >= 4) factors.push("[스트레스성 과식]: 코르티솔 호르몬이 상승하면 탄수화물·고지방 음식 갈망이 강해지고, 복부 지방 축적을 촉진합니다.");
+  if (sleepHours !== null && sleepHours < 7) factors.push("[수면 부족]: 수면이 7시간 미만이면 그렐린(식욕 증진) 호르몬이 증가하고 렙틴(포만 신호) 호르몬이 감소해 하루 평균 300kcal 더 먹게 됩니다.");
+  if (foodText.includes("라면") || foodText.includes("과자") || foodText.includes("편의점")) {
+    factors.push("[초가공식품 섭취]: 라면·과자·편의점 식품은 나트륨과 정제 탄수화물이 높아 부종을 유발하고 혈당을 급격히 올려 지방 축적을 가속화합니다.");
+  }
+  if (factors.length === 0) {
+    factors.push("[식사 기록 부족]: 더 많은 식사를 기록할수록 정확한 살찌는 요인 분석이 가능합니다.");
+    factors.push("[감정적 식사 패턴]: 배고픔이 아닌 감정(스트레스, 지루함, 외로움)으로 먹는 패턴이 체중 증가의 주요 원인입니다.");
+    factors.push("[불규칙한 식사 시간]: 식사 시간이 불규칙하면 인슐린 분비 패턴이 불안정해져 지방 합성이 증가합니다.");
+    factors.push("[수분 섭취 부족]: 물 부족은 허기와 구분되지 않아 불필요한 칼로리 섭취로 이어집니다.");
+  }
+  return factors.join("\n\n");
+}
+
+function buildFallbackFoodAlternatives(
+  meals: Array<{ food_items: string }>
+): string {
+  const defaults = [
+    "❌ 라면/인스턴트 → ✅ 현미밥 + 된장국: 나트륨 1/3 수준, 식이섬유로 포만감 3배 지속",
+    "❌ 과자·스낵 → ✅ 삶은 달걀 + 방울토마토: 단백질로 혈당 안정, 포만감 유지",
+    "❌ 흰쌀밥 → ✅ 현미밥 또는 잡곡밥: 혈당 지수(GI) 40% 낮고 식이섬유 4배 풍부",
+    "❌ 탄산음료·카페라떼 → ✅ 탄산수 + 아메리카노: 설탕 0g, 칼로리 200kcal 절약",
+    "❌ 야식 치킨·피자 → ✅ 두부 + 삶은 채소: 단백질 동일하게 채우면서 지방 1/5 수준",
+    "❌ 빵·도넛 → ✅ 오트밀 + 바나나: 천천히 소화되어 혈당 급등 없이 에너지 공급",
+  ];
+  const foodText = meals.map((m) => m.food_items).join(" ");
+  const specific: string[] = [];
+  if (foodText.includes("라면")) specific.push("❌ 라면 → ✅ 곤약면 + 채소 국물: 칼로리 75% 절감, 포만감은 동일");
+  if (foodText.includes("치킨")) specific.push("❌ 프라이드 치킨 → ✅ 닭가슴살 구이 + 쌈채소: 지방 1/6 수준, 단백질 동일");
+  if (foodText.includes("삼겹살") || foodText.includes("고기")) specific.push("❌ 삼겹살 → ✅ 목살 or 닭다리살: 포화지방 절반, 단백질은 더 풍부");
+  if (foodText.includes("과자") || foodText.includes("쿠키")) specific.push("❌ 과자 → ✅ 무가당 아몬드 한 줌: 건강지방으로 혈당 안정, 칼로리 비슷하지만 영양 밀도 10배");
+
+  const combined = [...specific, ...defaults.filter((_, i) => specific.length + i < 5)];
+  return combined.slice(0, 5).join("\n");
+}
+
+function buildFallbackEatingMentoring(bingeCount: number, avgStress: number): string {
+  return `1. 규칙적인 3끼 식사 원칙
+아침-점심-저녁을 4-5시간 간격으로 규칙적으로 먹으면 인슐린 분비가 안정되어 지방 축적이 줄어듭니다. 아침을 먹지 않으면 점심·저녁 폭식 위험이 3배 높아집니다. 아침은 단백질(달걀, 두부)을 포함한 400-500kcal로 시작하세요.
+
+2. 폭식 예방을 위한 '80% 포만감' 법칙
+천천히 씹고(한 입당 20번 이상), 뇌가 포만 신호를 인식하는 데 20분이 걸립니다. 식사 시 스마트폰·TV를 끄고 음식에 집중하세요. 80% 배부름에서 멈추는 연습이 ${bingeCount > 0 ? "폭식 예방의 핵심 기술" : "건강한 식습관의 기초"}입니다.
+
+3. 스트레스 식욕 vs 진짜 배고픔 구분하기 (현재 스트레스 ${avgStress >= 4 ? "높음 — 특히 중요!" : "보통"})
+음식이 당길 때 '지금 진짜 배고픈가? 마지막 식사가 3시간 이상 지났나?'를 먼저 물어보세요. 스트레스·감정으로 먹고 싶다면 먼저 물 한 잔 + 5분 산책을 시도하세요. 감정적 식욕은 15-20분 후 자연히 감소합니다.
+
+4. 비만 교정의 핵심 — 지속 가능한 작은 변화
+극단적 다이어트(단식, 초저칼로리)는 기초대사율을 낮추고 요요를 부릅니다. 대신 매일 식사에서 탄수화물 1/4을 줄이고, 단백질(두부, 달걀, 닭가슴살)을 늘리는 것이 장기적으로 효과적입니다. 체중은 주당 0.5kg 감량이 가장 지속 가능한 속도입니다.`;
+}
+
 export async function getBingeMentoring(
   logId: string,
   latestMeal: { food_items: string; emotional_state: string | null } | null

@@ -5,6 +5,7 @@ import MealForm from "@/app/components/MealForm";
 import MealList from "@/app/components/MealList";
 import AIAnalysisPanel from "@/app/components/AIAnalysisPanel";
 import BingeMentoringCard from "@/app/components/BingeMentoringCard";
+import NutritionCoachPanel from "@/app/components/NutritionCoachPanel";
 import { MOOD_EMOJI } from "@/types/recovery";
 
 export default async function Home() {
@@ -146,6 +147,22 @@ export default async function Home() {
             )}
           </div>
         </section>
+
+        {/* 영양 코칭 — 살찌는 요인 · 대체 음식 · 식습관 멘토링 */}
+        {log && (
+          <section className="organic-card p-5">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-base">🌾</span>
+              <h2 className="text-base font-semibold text-stone-800 dark:text-stone-100">
+                영양 코칭
+              </h2>
+            </div>
+            <p className="text-xs text-stone-400 dark:text-stone-500 mb-4 pl-6">
+              살찌는 요인 분석 · 대체 음식 추천 · 올바른 식습관 교정
+            </p>
+            <NutritionCoachPanel logId={log.id} existing={analysis} />
+          </section>
+        )}
 
         {/* AI 행동 코칭 */}
         {log && (
