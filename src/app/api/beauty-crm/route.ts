@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-
 export async function POST(req: NextRequest) {
+  const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
   const body = await req.json();
   const { 업종, 고객유형, 마지막방문, 받은서비스, 고객상황, 연락목적, 응대톤, 주의사항 } = body;
 
