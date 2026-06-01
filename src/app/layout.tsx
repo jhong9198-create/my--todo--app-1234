@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Nanum_Brush_Script } from "next/font/google";
+import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import NatureBg from "@/app/components/NatureBg";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -13,15 +12,9 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const nanumBrush = Nanum_Brush_Script({
-  weight: "400",
-  subsets: ["latin"],
-  variable: "--font-brush",
-});
-
 export const metadata: Metadata = {
-  title: "곁 — 무너진 날에도, 다시 내 곁으로",
-  description: "무너진 날에도, 다시 내 곁으로 돌아오는 기록",
+  title: "다이어트 탐정",
+  description: "식습관·감정·패턴을 추적해 살이 안 빠지는 진짜 이유를 찾아드립니다",
 };
 
 export default function RootLayout({
@@ -30,12 +23,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="ko"
-      className={`${geistSans.variable} ${geistMono.variable} ${nanumBrush.variable} h-full antialiased`}
-    >
-      <body className="min-h-full flex flex-col">
-        <NatureBg />
+    <html lang="ko" className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}>
+      <body className="min-h-full flex flex-col" style={{ background: "var(--warm-white)" }}>
         {children}
       </body>
     </html>

@@ -60,7 +60,7 @@ export default function AIEmpathyCard({ log }: Props) {
                   </div>
                   <div>
                     <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-500 dark:text-indigo-400 mb-1.5">
-                      곁 메시지
+                      탐정 메시지
                     </p>
                     <p className="text-sm text-stone-700 dark:text-stone-200 leading-relaxed">{message}</p>
                   </div>

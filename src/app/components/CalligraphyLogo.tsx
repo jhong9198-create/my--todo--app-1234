@@ -14,7 +14,7 @@ export default function CalligraphyLogo() {
     >
       <Image
         src="/KakaoTalk_20260516_032731172.png"
-        alt="곁"
+        alt="다이어트 탐정"
         fill
         priority
         sizes="112px"
