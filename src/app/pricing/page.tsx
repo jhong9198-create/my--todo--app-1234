@@ -1,19 +1,12 @@
 import Link from "next/link";
 
-const FREE_FEATURES = [
-  "다이어트 원인 진단 (4문항)",
-  "5가지 유형 분석 결과",
-  "핵심 원인 + 반복 패턴 설명",
-  "유형별 3가지 기본 규칙",
-];
-
-const PREMIUM_FEATURES = [
+const COACHING_FEATURES = [
   "무료 플랜 모든 기능",
-  "유형별 7일 맞춤 실천 미션",
+  "1대1 맞춤 식단·운동 플래너",
+  "4주 목표 설정 및 주간 점검",
   "폭식·야식 방지 전략",
-  "주간 개선 분석",
+  "카카오톡 코칭 상담",
   "다이어트 탐정 리포트 PDF",
-  "새로운 미션 매주 업데이트",
 ];
 
 const FAQ = [
@@ -50,33 +43,7 @@ export default function PricingPage() {
       </div>
 
       <div className="max-w-md mx-auto px-4 -mt-6 space-y-4">
-        {/* 무료 플랜 */}
-        <div className="bg-white rounded-2xl p-6" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
-          <div className="flex justify-between items-start mb-5">
-            <div>
-              <p className="font-black text-lg" style={{ color: "var(--navy)" }}>무료</p>
-              <p className="text-xs text-gray-400 mt-0.5">기본 원인 분석</p>
-            </div>
-            <p className="text-2xl font-black" style={{ color: "var(--navy)" }}>₩0</p>
-          </div>
-          <ul className="space-y-2.5 mb-6">
-            {FREE_FEATURES.map((f) => (
-              <li key={f} className="flex items-start gap-2.5 text-sm text-gray-600">
-                <span className="text-base leading-none mt-0.5" style={{ color: "var(--amber)" }}>✓</span>
-                {f}
-              </li>
-            ))}
-          </ul>
-          <Link
-            href="/diagnosis"
-            className="block w-full text-center py-3 rounded-xl text-sm font-bold"
-            style={{ background: "var(--beige)", color: "var(--navy)", border: "2px solid var(--beige-dark)" }}
-          >
-            무료 진단 시작하기
-          </Link>
-        </div>
-
-        {/* 프리미엄 플랜 */}
+        {/* 코칭 상담 플랜 */}
         <div
           className="rounded-2xl p-6 relative overflow-hidden"
           style={{ background: "var(--navy)", boxShadow: "0 8px 32px rgba(30,58,95,0.25)" }}
@@ -91,19 +58,19 @@ export default function PricingPage() {
 
           <div className="flex justify-between items-start mb-5">
             <div>
-              <p className="font-black text-lg text-white">프리미엄</p>
+              <p className="font-black text-lg text-white">코칭 상담</p>
               <p className="text-xs mt-0.5" style={{ color: "rgba(255,255,255,0.45)" }}>
-                7일 맞춤 루틴
+                1대1 플래너 · 4주
               </p>
             </div>
             <div className="text-right">
-              <p className="text-2xl font-black text-white">₩9,900</p>
-              <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>/월</p>
+              <p className="text-2xl font-black text-white">₩20,000</p>
+              <p className="text-xs" style={{ color: "rgba(255,255,255,0.4)" }}>/4주</p>
             </div>
           </div>
 
           <ul className="space-y-2.5 mb-6">
-            {PREMIUM_FEATURES.map((f, i) => (
+            {COACHING_FEATURES.map((f, i) => (
               <li key={f} className="flex items-start gap-2.5 text-sm" style={{ color: i === 0 ? "rgba(255,255,255,0.45)" : "rgba(255,255,255,0.85)" }}>
                 <span className="text-base leading-none mt-0.5" style={{ color: "var(--amber)" }}>✓</span>
                 {f}
@@ -115,10 +82,10 @@ export default function PricingPage() {
             className="w-full py-4 rounded-xl font-black text-base transition-transform hover:scale-[1.02] active:scale-95"
             style={{ background: "var(--amber)", color: "var(--navy)" }}
           >
-            7일 무료 체험 시작하기
+            코칭 상담 신청하기
           </button>
           <p className="text-center text-xs mt-3" style={{ color: "rgba(255,255,255,0.3)" }}>
-            7일 후 자동 결제 · 언제든 취소 가능
+            4주 1대1 맞춤 플래너 · ₩20,000
           </p>
         </div>
 

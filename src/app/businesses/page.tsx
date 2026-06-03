@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, Suspense, useEffect } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import {
@@ -12,7 +12,6 @@ import {
   ServiceType,
   PriceCategory,
 } from "@/lib/recommendation";
-import { trackEvent } from "@/lib/tracking";
 
 const ALL_TYPES: (ServiceType | "all")[] = [
   "all",
@@ -31,11 +30,6 @@ function BusinessesContent() {
   const [activeType, setActiveType] = useState<ServiceType | "all">(initialType);
   const [activeRegion, setActiveRegion] = useState("전체");
   const [activePrice, setActivePrice] = useState<PriceCategory | "all">("all");
-
-  // 업체 목록 방문 이벤트 (세션당 1회)
-  useEffect(() => {
-    void trackEvent({ eventName: "businesses_page_visit" });
-  }, []);
 
   const filtered = BUSINESSES.filter((b) => {
     const typeMatch = activeType === "all" || b.type === activeType;
