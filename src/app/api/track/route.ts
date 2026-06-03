@@ -39,10 +39,24 @@ export async function POST(req: NextRequest) {
       redirect: "follow",
     });
 
+    const responseText = await res.text();
+    console.log(`[track/api] Apps Script 응답 (status ${res.status}):`, responseText);
+
     if (!res.ok) {
-      const text = await res.text();
-      console.error("[track/api] Google Sheets 오류:", text);
-      return NextResponse.json({ error: text }, { status: 500 });
+      console.error("[track/api] Google Sheets HTTP 오류:", res.status, responseText);
+      return NextResponse.json({ error: responseText }, { status: 500 });
+    }
+
+    let responseJson: { ok?: boolean; error?: string } = {};
+    try {
+      responseJson = JSON.parse(responseText);
+    } catch {
+      console.warn("[track/api] Apps Script 응답이 JSON이 아님:", responseText);
+    }
+
+    if (responseJson.error) {
+      console.error("[track/api] Apps Script 내부 오류:", responseJson.error);
+      return NextResponse.json({ error: responseJson.error }, { status: 500 });
     }
 
     console.log(`[track/api] ✓ 저장: ${body.eventName} (${body.createdAt})`);
