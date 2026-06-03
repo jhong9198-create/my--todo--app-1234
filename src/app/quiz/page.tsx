@@ -1,15 +1,21 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { QuizAnswers, Budget, QUIZ_QUESTIONS } from "@/lib/recommendation";
+import { trackEvent } from "@/lib/tracking";
 
 export default function QuizPage() {
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<(boolean | Budget)[]>([]);
   const [selected, setSelected] = useState<boolean | Budget | null>(null);
+
+  // 퀴즈 시작 이벤트 (세션당 1회)
+  useEffect(() => {
+    void trackEvent({ eventName: "quiz_start" });
+  }, []);
 
   const question = QUIZ_QUESTIONS[step];
   const progressPct = ((step + 1) / QUIZ_QUESTIONS.length) * 100;
@@ -31,6 +37,13 @@ export default function QuizPage() {
         deliveryIssue: deliveryIssue as boolean,
       };
       localStorage.setItem("wg_answers", JSON.stringify(quizAnswers));
+
+      // 퀴즈 완료 이벤트 (매 완료마다 기록)
+      void trackEvent({
+        eventName: "quiz_complete",
+        selectedAnswers: quizAnswers as unknown as Record<string, unknown>,
+      });
+
       router.push("/result");
     } else {
       setAnswers(next);

@@ -13,6 +13,7 @@ import {
   getRecommendations,
   getRecommendationReason,
 } from "@/lib/recommendation";
+import { trackEvent } from "@/lib/tracking";
 
 // ─── Feedback types ──────────────────────────────────────────────
 interface FeedbackData {
@@ -96,9 +97,22 @@ function FeedbackForm({ topRecommendation }: { topRecommendation: ServiceType })
     localStorage.setItem("wg_feedback", JSON.stringify(feedbackData));
     localStorage.setItem("wg_feedback_submitted", "true");
 
+    console.log("feedbackData:", feedbackData);
+
+    // 피드백 제출 이벤트
+    void trackEvent({
+      eventName: "feedback_submit",
+      resultType: feedbackData.resultType,
+      topRecommendation: feedbackData.topRecommendation,
+      accuracy: feedbackData.accuracy,
+      interest: feedbackData.interest,
+      consultationIntent: feedbackData.consultationIntent,
+      name: feedbackData.name,
+      phone: feedbackData.phone,
+    });
+
     // 추후 Supabase/Firebase 연동 포인트
     // await submitFeedbackToServer(feedbackData);
-    console.log("feedbackData:", feedbackData);
 
     setDone(true);
   }
@@ -285,6 +299,14 @@ export default function ResultPage() {
       setAnswers(parsed);
       setRecommendations(recs);
       setLoading(false);
+
+      // 결과 페이지 도달 이벤트 (세션당 1회)
+      void trackEvent({
+        eventName: "result_reached",
+        topRecommendation: recs[0],
+        resultType: SERVICE_LABELS[recs[0]],
+        selectedAnswers: parsed as unknown as Record<string, unknown>,
+      });
     }, 1800);
 
     return () => clearTimeout(timer);
@@ -464,6 +486,13 @@ export default function ResultPage() {
 
                 <Link
                   href={`/businesses?type=${type}`}
+                  onClick={() =>
+                    void trackEvent({
+                      eventName: "business_view_click",
+                      topRecommendation: type,
+                      resultType: SERVICE_LABELS[type],
+                    })
+                  }
                   className="block w-full text-center py-3 rounded-xl font-bold text-sm transition-transform hover:scale-[1.02]"
                   style={{
                     background: idx === 0 ? "var(--navy)" : "var(--beige-dark)",
@@ -499,6 +528,13 @@ export default function ResultPage() {
         <div className="flex flex-col gap-3 pt-2">
           <Link
             href={`/businesses?type=${topType}`}
+            onClick={() =>
+              void trackEvent({
+                eventName: "business_view_click",
+                topRecommendation: topType,
+                resultType: SERVICE_LABELS[topType],
+              })
+            }
             className="block w-full text-center py-4 rounded-2xl font-bold text-base transition-transform hover:scale-[1.02]"
             style={{ background: "var(--amber)", color: "var(--navy)" }}
           >
