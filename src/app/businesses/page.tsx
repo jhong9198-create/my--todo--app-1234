@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
+import Link from "next/link";import { trackEvent } from "@/lib/tracking";
 import {
   BUSINESSES,
   REGIONS,
@@ -30,6 +30,10 @@ function BusinessesContent() {
   const [activeType, setActiveType] = useState<ServiceType | "all">(initialType);
   const [activeRegion, setActiveRegion] = useState("전체");
   const [activePrice, setActivePrice] = useState<PriceCategory | "all">("all");
+
+  useEffect(() => {
+    void trackEvent({ eventName: "businesses_page_visit" });
+  }, []);
 
   const filtered = BUSINESSES.filter((b) => {
     const typeMatch = activeType === "all" || b.type === activeType;

@@ -13,6 +13,8 @@ import {
   getRecommendations,
   getRecommendationReason,
 } from "@/lib/recommendation";
+import { trackEvent } from "@/lib/tracking";
+
 // ─── Feedback types ──────────────────────────────────────────────
 interface FeedbackData {
   resultType: string;
@@ -95,6 +97,16 @@ function FeedbackForm({ topRecommendation }: { topRecommendation: ServiceType })
     localStorage.setItem("wg_feedback", JSON.stringify(feedbackData));
     localStorage.setItem("wg_feedback_submitted", "true");
 
+    void trackEvent({
+      eventName: "feedback_submit",
+      resultType: feedbackData.resultType,
+      topRecommendation: feedbackData.topRecommendation,
+      accuracy: feedbackData.accuracy,
+      interest: feedbackData.interest,
+      consultationIntent: feedbackData.consultationIntent,
+      name: feedbackData.name,
+      phone: feedbackData.phone,
+    });
 
     setDone(true);
   }
@@ -282,6 +294,12 @@ export default function ResultPage() {
       setRecommendations(recs);
       setLoading(false);
 
+      void trackEvent({
+        eventName: "result_reached",
+        topRecommendation: recs[0],
+        resultType: SERVICE_LABELS[recs[0]],
+        selectedAnswers: parsed as unknown as Record<string, unknown>,
+      });
     }, 1800);
 
     return () => clearTimeout(timer);
