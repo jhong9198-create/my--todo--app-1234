@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 
+// Google Apps Script 웹훅으로 데이터를 전송합니다.
+// 설정 방법은 프로젝트 루트 GOOGLE_SHEETS_SETUP.md 참고
 interface TrackBody {
   eventName: string;
   createdAt: string;
@@ -13,18 +15,11 @@ interface TrackBody {
   phone?: string;
 }
 
-function richText(value: string | undefined) {
-  return {
-    rich_text: [{ text: { content: value ?? "" } }],
-  };
-}
-
 export async function POST(req: NextRequest) {
-  const token = process.env.NOTION_TOKEN;
-  const databaseId = process.env.NOTION_DATABASE_ID;
+  const webhookUrl = process.env.GOOGLE_SHEETS_WEBHOOK_URL;
 
-  if (!token || !databaseId) {
-    console.error("[track/api] NOTION_TOKEN 또는 NOTION_DATABASE_ID 환경변수 누락");
+  if (!webhookUrl) {
+    console.error("[track/api] GOOGLE_SHEETS_WEBHOOK_URL 환경변수 누락");
     return NextResponse.json({ error: "Not configured" }, { status: 500 });
   }
 
@@ -35,43 +30,19 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const properties = {
-    "Event Name": {
-      title: [{ text: { content: body.eventName } }],
-    },
-    "Created At": {
-      date: { start: body.createdAt },
-    },
-    "Result Type":          richText(body.resultType),
-    "Top Recommendation":   richText(body.topRecommendation),
-    "Selected Answers":     richText(
-      body.selectedAnswers ? JSON.stringify(body.selectedAnswers) : ""
-    ),
-    "Accuracy":             richText(body.accuracy),
-    "Interest":             richText(body.interest),
-    "Consultation Intent":  richText(body.consultationIntent),
-    "Name":                 richText(body.name),
-    "Phone":                richText(body.phone),
-  };
-
   try {
-    const res = await fetch("https://api.notion.com/v1/pages", {
+    const res = await fetch(webhookUrl, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-        "Notion-Version": "2022-06-28",
-      },
-      body: JSON.stringify({
-        parent: { database_id: databaseId },
-        properties,
-      }),
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      // Apps Script는 redirect를 따라가야 함
+      redirect: "follow",
     });
 
     if (!res.ok) {
-      const error = await res.text();
-      console.error("[track/api] Notion 오류:", error);
-      return NextResponse.json({ error }, { status: 500 });
+      const text = await res.text();
+      console.error("[track/api] Google Sheets 오류:", text);
+      return NextResponse.json({ error: text }, { status: 500 });
     }
 
     console.log(`[track/api] ✓ 저장: ${body.eventName} (${body.createdAt})`);
