@@ -23,7 +23,7 @@ async function sendToNotion(body: Record<string, unknown>) {
     body: JSON.stringify({
       parent: { database_id: dbId },
       properties: {
-        "Event Name": { title: [{ text: { content: String(body.eventName ?? "") } }] },
+        "문서 이름": { title: [{ text: { content: String(body.eventName ?? "") } }] },
         "Created At": { date: { start: createdAt } },
         "Result Type": { rich_text: [{ text: { content: String(body.resultType ?? "") } }] },
         "Top Recommendation": { rich_text: [{ text: { content: String(body.topRecommendation ?? "") } }] },
