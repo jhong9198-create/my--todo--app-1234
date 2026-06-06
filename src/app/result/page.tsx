@@ -11,6 +11,69 @@ import {
 } from "@/lib/diagnosis";
 import { trackEvent } from "@/lib/tracking";
 
+const SITE_URL = "https://my-todo-app-three-woad.vercel.app";
+
+function ShareSection({ info }: { info: (typeof FAILURE_TYPE_INFO)[FailureType] }) {
+  const [copied, setCopied] = useState(false);
+
+  const shareText = `나의 다이어트 실패 유형은 ${info.emoji} ${info.label}\n\n왜 반복해서 실패하는지 3가지 질문으로 알아봤어요.\n너도 해봐 👇\n${SITE_URL}`;
+
+  async function handleShare() {
+    void trackEvent({ eventName: "result_share_click", resultType: info.label });
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `나의 다이어트 실패 유형: ${info.label}`,
+          text: shareText,
+          url: SITE_URL,
+        });
+      } catch {
+        // 사용자가 취소한 경우 무시
+      }
+    } else {
+      await navigator.clipboard.writeText(shareText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }
+
+  return (
+    <div
+      className="rounded-2xl p-6 text-center"
+      style={{ background: "white", boxShadow: "0 2px 16px rgba(0,0,0,0.07)" }}
+    >
+      <p className="text-xs font-black tracking-widest mb-2" style={{ color: "var(--amber)" }}>
+        SHARE
+      </p>
+      <p className="font-black text-base mb-1" style={{ color: "var(--navy)" }}>
+        친구도 궁금하지 않나요?
+      </p>
+      <p className="text-xs text-gray-400 mb-5">
+        공유하면 친구의 실패 유형도 알 수 있어요
+      </p>
+
+      <div
+        className="rounded-xl p-4 mb-5 text-left text-xs leading-relaxed text-gray-500"
+        style={{ background: "var(--beige)", border: "1px solid rgba(212,168,83,0.2)" }}
+      >
+        나의 다이어트 실패 유형은 {info.emoji} <strong style={{ color: "var(--navy)" }}>{info.label}</strong>
+        <br />왜 반복해서 실패하는지 3가지 질문으로 알아봤어요.
+        <br /><span style={{ color: "var(--amber)" }}>너도 해봐 👇</span>
+      </div>
+
+      <button
+        onClick={handleShare}
+        className="w-full py-4 rounded-2xl font-black text-base transition-all hover:scale-[1.02]"
+        style={{ background: copied ? "var(--navy)" : "var(--amber)", color: copied ? "white" : "var(--navy)" }}
+        data-event="share_button"
+      >
+        {copied ? "✓ 링크가 복사됐어요!" : "카카오톡·인스타에 공유하기 →"}
+      </button>
+    </div>
+  );
+}
+
 const HELP_LABELS: Record<string, string> = {
   obesity_clinic: "비만클리닉",
   oriental: "한의원",
@@ -148,6 +211,9 @@ export default function ResultPage() {
             ))}
           </div>
         </div>
+
+        {/* 공유 */}
+        <ShareSection info={info} />
 
         {/* 추천 도움 */}
         <div
