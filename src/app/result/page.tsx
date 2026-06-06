@@ -74,6 +74,68 @@ function ShareSection({ info }: { info: (typeof FAILURE_TYPE_INFO)[FailureType] 
   );
 }
 
+const ACCURACY_OPTIONS = [
+  { emoji: "😮", label: "완전 나야", value: "완전맞음" },
+  { emoji: "🤔", label: "어느 정도", value: "어느정도" },
+  { emoji: "😐", label: "잘 모르겠어", value: "모르겠음" },
+  { emoji: "😕", label: "아닌 것 같아", value: "안맞음" },
+];
+
+function AccuracyFeedback({ resultType }: { resultType: string }) {
+  const [selected, setSelected] = useState<string | null>(null);
+
+  useEffect(() => {
+    const saved = localStorage.getItem("wg_accuracy_feedback");
+    if (saved) setSelected(saved);
+  }, []);
+
+  function handleSelect(value: string) {
+    if (selected) return;
+    setSelected(value);
+    localStorage.setItem("wg_accuracy_feedback", value);
+    void trackEvent({ eventName: "accuracy_feedback", accuracy: value, resultType });
+  }
+
+  return (
+    <div
+      className="rounded-2xl p-5 text-center"
+      style={{ background: "white", boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}
+    >
+      <p className="text-sm font-black mb-4" style={{ color: "var(--navy)" }}>
+        이 분석 결과가 나에게 얼마나 맞나요?
+      </p>
+      <div className="grid grid-cols-4 gap-2">
+        {ACCURACY_OPTIONS.map((opt) => {
+          const isChosen = selected === opt.value;
+          return (
+            <button
+              key={opt.value}
+              onClick={() => handleSelect(opt.value)}
+              disabled={!!selected}
+              className="flex flex-col items-center gap-1.5 py-3 rounded-xl transition-all"
+              style={{
+                background: isChosen ? "var(--navy)" : "var(--beige)",
+                border: `2px solid ${isChosen ? "var(--navy)" : "transparent"}`,
+                opacity: selected && !isChosen ? 0.4 : 1,
+              }}
+            >
+              <span className="text-xl">{opt.emoji}</span>
+              <span className="text-xs font-semibold" style={{ color: isChosen ? "white" : "var(--navy)" }}>
+                {opt.label}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+      {selected && (
+        <p className="text-xs text-gray-400 mt-3">
+          피드백 감사해요. 더 정확한 분석에 반영할게요. 🙏
+        </p>
+      )}
+    </div>
+  );
+}
+
 const HELP_LABELS: Record<string, string> = {
   obesity_clinic: "비만클리닉",
   oriental: "한의원",
@@ -306,6 +368,9 @@ export default function ResultPage() {
             </button>
           </div>
         </div>
+
+        {/* 정확도 피드백 */}
+        <AccuracyFeedback resultType={info.label} />
 
         {/* 다시 분석 */}
         <button

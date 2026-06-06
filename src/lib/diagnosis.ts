@@ -9,6 +9,8 @@ export type FailureType =
 export interface DiagnosisAnswers {
   failureCause: string;
   failureMoment: string;
+  eatingPattern: string;
+  dietAttempts: string;
   wantedHelp: string;
 }
 
@@ -44,6 +46,26 @@ export const DIAGNOSIS_QUESTIONS: DiagnosisQuestion[] = [
     ],
   },
   {
+    id: "eatingPattern",
+    text: "평소 나의 식사 패턴은 어떤가요?",
+    options: [
+      { label: "규칙적으로 3끼 먹어요", value: "규칙3끼" },
+      { label: "끼니를 자주 거르는 편", value: "끼니거름" },
+      { label: "야식이 사실상 메인 식사", value: "야식메인" },
+      { label: "폭식 후 굶기를 반복해요", value: "폭식굶기" },
+    ],
+  },
+  {
+    id: "dietAttempts",
+    text: "지금까지 다이어트를 포기한 횟수는?",
+    options: [
+      { label: "1~2번", value: "1-2번" },
+      { label: "3~5번", value: "3-5번" },
+      { label: "5번 이상", value: "5번이상" },
+      { label: "셀 수 없을 만큼", value: "셀수없음" },
+    ],
+  },
+  {
     id: "wantedHelp",
     text: "가장 원하는 도움은 무엇인가요?",
     options: [
@@ -57,16 +79,16 @@ export const DIAGNOSIS_QUESTIONS: DiagnosisQuestion[] = [
 ];
 
 const SCORES: Record<FailureType, Record<string, number>> = {
-  night_eating: { 야식: 4, 폭식: 1, "3일이내": 1, "1주일후": 1, 식단가이드: 2, 실천방법: 1 },
-  stress_binge: { 폭식: 3, 스트레스: 3, 스트레스받을때: 3, 생리전후: 2, 원인분석: 1, 실천방법: 1 },
-  three_day_quit: { 식단관리실패: 2, 운동부족: 1, "3일이내": 4, "1주일후": 2, 실천방법: 2, 원인분석: 1 },
-  plateau_despair: { 식단관리실패: 1, 정체기: 4, 원인분석: 2, 실천방법: 1 },
-  social_collapse: { 술자리: 4, 회식후: 4, 실천방법: 1 },
-  exercise_avoidance: { 운동부족: 4, "1주일후": 1, "3일이내": 1, 운동추천: 3 },
+  night_eating:       { 야식: 4, 폭식: 1, "3일이내": 1, "1주일후": 1, 야식메인: 4, "1-2번": 1, 식단가이드: 2, 실천방법: 1 },
+  stress_binge:       { 폭식: 3, 스트레스: 3, 스트레스받을때: 3, 생리전후: 2, 폭식굶기: 4, "3-5번": 1, 셀수없음: 1, 원인분석: 1, 실천방법: 1 },
+  three_day_quit:     { 식단관리실패: 2, 운동부족: 1, "3일이내": 4, "1주일후": 2, 끼니거름: 2, "3-5번": 2, 셀수없음: 2, 실천방법: 2, 원인분석: 1 },
+  plateau_despair:    { 식단관리실패: 1, 정체기: 4, 규칙3끼: 1, "5번이상": 2, 셀수없음: 1, 원인분석: 2, 실천방법: 1 },
+  social_collapse:    { 술자리: 4, 회식후: 4, 규칙3끼: 2, "1-2번": 1, "3-5번": 1, 실천방법: 1 },
+  exercise_avoidance: { 운동부족: 4, "1주일후": 1, "3일이내": 1, 끼니거름: 2, "5번이상": 1, 운동추천: 3 },
 };
 
 export function getDiagnosisResult(answers: DiagnosisAnswers): FailureType {
-  const vals = [answers.failureCause, answers.failureMoment, answers.wantedHelp];
+  const vals = [answers.failureCause, answers.failureMoment, answers.eatingPattern, answers.dietAttempts, answers.wantedHelp];
   const totals = {} as Record<FailureType, number>;
   for (const type of Object.keys(SCORES) as FailureType[]) {
     totals[type] = vals.reduce((sum, v) => sum + (SCORES[type][v] ?? 0), 0);
