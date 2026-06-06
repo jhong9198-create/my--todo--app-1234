@@ -1,207 +1,144 @@
+"use client";
+
 import Link from "next/link";
-import { SERVICE_LABELS, SERVICE_ICONS, SERVICE_DESCRIPTIONS, ServiceType } from "@/lib/recommendation";
+import { trackEvent } from "@/lib/tracking";
 
-const SERVICE_TYPES: ServiceType[] = [
-  'obesity_clinic',
-  'oriental',
-  'pt',
-  'body_care',
-  'meal_delivery',
-  'online_coaching',
-];
-
-const STEPS = [
-  { num: "01", title: "성향 테스트", desc: "운동, 식단, 기록, 비용 4가지 질문에 답합니다" },
-  { num: "02", title: "맞춤 추천", desc: "답변을 분석해 나에게 맞는 다이어트 유형 TOP 3를 추천합니다" },
-  { num: "03", title: "업체 탐색", desc: "추천 유형의 실제 업체 리스트와 상세 정보를 확인합니다" },
+const EMPATHY_CARDS = [
+  { emoji: "🤔", text: "분명 적게 먹는데 살이 잘 안 빠져요" },
+  { emoji: "🌙", text: "밤마다 야식을 못 참겠어요" },
+  { emoji: "📅", text: "항상 3일 하고 포기해요" },
+  { emoji: "📊", text: "정체기만 오면 무너져요" },
+  { emoji: "🍽️", text: "운동보다 먹는 게 문제 같아요" },
 ];
 
 export default function HomePage() {
   return (
-    <main>
+    <main className="min-h-screen" style={{ background: "var(--warm-white)" }}>
       {/* ── Hero ── */}
       <section
-        className="min-h-screen flex flex-col items-center justify-center px-5 py-24 text-center"
+        className="relative px-5 pt-14 pb-16 flex flex-col items-center text-center"
         style={{ background: "var(--navy)" }}
       >
-        <div className="max-w-md w-full">
-          <div
-            className="inline-flex items-center gap-2 mb-10 px-4 py-2 rounded-full"
-            style={{ background: "rgba(255,255,255,0.08)", border: "1px solid rgba(255,255,255,0.14)" }}
-          >
-            <span className="text-base">📍</span>
-            <span className="text-white text-sm font-semibold tracking-widest">다이어트 어디가?</span>
-          </div>
+        <span
+          className="text-xs font-black tracking-widest mb-6 px-3 py-1 rounded-full"
+          style={{ color: "var(--amber)", background: "rgba(212,168,83,0.15)" }}
+        >
+          📍 다이어트 어디가?
+        </span>
 
-          <p className="text-lg font-semibold mb-4" style={{ color: "var(--amber)", letterSpacing: "0.01em" }}>
-            살은 빼고 싶은데 뭘 해야 할 지 모르겠다면
-          </p>
+        <h1 className="text-2xl font-black text-white leading-snug mb-4 max-w-xs">
+          당신이 다시 살이 찔 수밖에 없는
+          <br />
+          <span style={{ color: "var(--amber)" }}>이유 찾기</span>
+        </h1>
 
-          <h1
-            className="text-4xl font-bold text-white leading-tight mb-6"
-            style={{ letterSpacing: "-0.025em" }}
-          >
-            다이어트 방법보다 먼저,<br />
-            <span style={{ color: "var(--amber)" }}>나에게 맞는 선택지를</span><br />
-            찾으세요
-          </h1>
+        <p className="text-sm leading-relaxed mb-2 max-w-sm" style={{ color: "rgba(255,255,255,0.55)" }}>
+          다이어트 방법은 이미 알고 있습니다.
+        </p>
+        <p className="text-sm leading-relaxed mb-10 max-w-sm" style={{ color: "rgba(255,255,255,0.75)" }}>
+          문제는 <strong className="text-white">왜 반복해서 실패하는지</strong> 모른다는 것입니다.
+        </p>
 
-          <p className="text-lg leading-relaxed mb-4" style={{ color: "rgba(255,255,255,0.62)" }}>
-            운동, 식단, 관리실, 병원 중<br />
-            나에게 맞는 방법을 찾아드립니다
-          </p>
+        <Link
+          href="/quiz"
+          onClick={() => void trackEvent({ eventName: "hero_cta_click" })}
+          data-event="hero_cta"
+          className="inline-block px-8 py-4 rounded-2xl font-black text-base transition-transform hover:scale-[1.03]"
+          style={{ background: "var(--amber)", color: "var(--navy)" }}
+        >
+          내 실패 원인 분석하기 →
+        </Link>
 
-          <p className="text-sm mb-12" style={{ color: "rgba(255,255,255,0.35)" }}>
-            돈과 시간을 쓰기 전에 먼저 내 상황에 맞는<br />
-            다이어트 유형과 업체를 확인하세요
-          </p>
+        <p className="text-xs mt-4" style={{ color: "rgba(255,255,255,0.3)" }}>
+          3가지 질문 · 1분 이내 · 무료
+        </p>
 
-          <Link
-            href="/quiz"
-            className="inline-flex items-center gap-3 px-8 py-4 rounded-2xl text-base font-bold transition-transform hover:scale-105 active:scale-95"
-            style={{ background: "var(--amber)", color: "var(--navy)" }}
-          >
-            내 다이어트 유형 찾기
-            <span className="text-lg">→</span>
-          </Link>
+        <div
+          className="absolute bottom-0 left-0 right-0 h-6"
+          style={{ background: "var(--warm-white)", borderRadius: "50% 50% 0 0 / 100% 100% 0 0" }}
+        />
+      </section>
 
-          <p className="mt-5 text-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
-            4가지 질문 · 무료 · 2분 소요
-          </p>
+      {/* ── 공감 섹션 ── */}
+      <section className="px-5 pt-10 pb-12 max-w-md mx-auto">
+        <p className="text-xs font-black tracking-widest text-center mb-2" style={{ color: "var(--amber)" }}>
+          COMMON STRUGGLES
+        </p>
+        <h2 className="text-lg font-black text-center mb-8" style={{ color: "var(--navy)" }}>
+          혹시 이런 경험 있으신가요?
+        </h2>
+
+        <div className="grid grid-cols-2 gap-3">
+          {EMPATHY_CARDS.map((card, i) => (
+            <div
+              key={i}
+              className={`rounded-2xl p-4 flex flex-col gap-2${i === 4 ? " col-span-2" : ""}`}
+              style={{
+                background: "white",
+                boxShadow: "0 2px 12px rgba(0,0,0,0.05)",
+                border: "1px solid rgba(212,168,83,0.15)",
+              }}
+            >
+              <span className="text-2xl">{card.emoji}</span>
+              <p className="text-sm font-semibold leading-snug" style={{ color: "var(--navy)" }}>
+                &ldquo;{card.text}&rdquo;
+              </p>
+            </div>
+          ))}
         </div>
       </section>
 
-      {/* ── How it works ── */}
-      <section className="py-20 px-5" style={{ background: "var(--beige)" }}>
-        <div className="max-w-md mx-auto">
-          <p className="text-xs font-bold tracking-widest text-center mb-3" style={{ color: "var(--amber)" }}>
+      {/* ── 진단 안내 ── */}
+      <section className="px-4 pb-10 max-w-md mx-auto">
+        <div className="rounded-3xl px-6 py-8" style={{ background: "var(--navy)" }}>
+          <p className="text-xs font-black tracking-widest mb-3" style={{ color: "var(--amber)" }}>
             HOW IT WORKS
           </p>
-          <h2 className="text-2xl font-bold text-center mb-12" style={{ color: "var(--navy)" }}>
-            3단계로 끝납니다
-          </h2>
+          <h3 className="text-base font-black text-white mb-6 leading-snug">
+            야식 · 폭식 · 작심삼일 · 정체기 · 요요
+            <br />
+            <span style={{ color: "rgba(255,255,255,0.55)" }}>반복되는 실패의 원인을 분석해 드립니다</span>
+          </h3>
 
-          <div className="flex flex-col gap-4">
-            {STEPS.map((step) => (
-              <div
-                key={step.num}
-                className="flex gap-5 items-start p-6 rounded-2xl bg-white"
-                style={{ boxShadow: "0 1px 4px rgba(0,0,0,0.05)" }}
-              >
-                <span
-                  className="text-2xl font-black shrink-0 leading-none pt-0.5"
-                  style={{ color: "var(--amber)" }}
-                >
-                  {step.num}
-                </span>
-                <div>
-                  <p className="font-bold mb-1" style={{ color: "var(--navy)" }}>{step.title}</p>
-                  <p className="text-sm leading-relaxed text-gray-500">{step.desc}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ── 서비스 유형 미리보기 ── */}
-      <section className="py-20 px-5" style={{ background: "var(--warm-white)" }}>
-        <div className="max-w-md mx-auto">
-          <p className="text-xs font-bold tracking-widest text-center mb-3" style={{ color: "var(--amber)" }}>
-            6 TYPES
-          </p>
-          <h2 className="text-2xl font-bold text-center mb-2" style={{ color: "var(--navy)" }}>
-            어떤 유형이 있나요?
-          </h2>
-          <p className="text-sm text-center mb-10 text-gray-400">
-            사람마다 맞는 방법이 달라요
-          </p>
-
-          <div className="grid grid-cols-2 gap-3 mb-10">
-            {SERVICE_TYPES.map((type) => (
-              <div
-                key={type}
-                className="p-4 rounded-xl"
-                style={{
-                  background: "#F9F6F0",
-                  border: "1px solid rgba(212,168,83,0.22)",
-                }}
-              >
-                <div className="text-2xl mb-2">{SERVICE_ICONS[type]}</div>
-                <p className="font-semibold text-sm mb-1" style={{ color: "var(--navy)" }}>
-                  {SERVICE_LABELS[type]}
-                </p>
-                <p className="text-xs text-gray-400 leading-relaxed">{SERVICE_DESCRIPTIONS[type]}</p>
-              </div>
-            ))}
-          </div>
-
-          <Link
-            href="/quiz"
-            className="block w-full text-center py-4 rounded-2xl font-bold text-base transition-transform hover:scale-[1.02] active:scale-95"
-            style={{ background: "var(--navy)", color: "white" }}
-          >
-            내 유형 찾기 →
-          </Link>
-        </div>
-      </section>
-
-      {/* ── 타깃 공감 ── */}
-      <section className="py-20 px-5" style={{ background: "var(--beige)" }}>
-        <div className="max-w-md mx-auto">
-          <p className="text-xs font-bold tracking-widest text-center mb-3" style={{ color: "var(--amber)" }}>
-            이런 분들께 딱 맞아요
-          </p>
-          <h2 className="text-2xl font-bold text-center mb-10" style={{ color: "var(--navy)" }}>
-            혹시 이런 고민 있으신가요?
-          </h2>
-
-          <div className="flex flex-col gap-3">
+          <div className="space-y-3 mb-8">
             {[
-              { emoji: "😴", text: "운동하러 가기 귀찮아서 매번 미루고 있어요" },
-              { emoji: "🍱", text: "식단 관리를 혼자 하면 항상 중간에 포기해요" },
-              { emoji: "💉", text: "위고비·마운자로 같은 편한 방법에 관심이 있어요" },
-              { emoji: "🤷", text: "PT, 클리닉, 한의원 중 어디 가야 할지 모르겠어요" },
-              { emoji: "💸", text: "돈 아깝지 않은 곳, 효과 있는 곳을 찾고 있어요" },
-            ].map((item) => (
-              <div
-                key={item.text}
-                className="flex items-start gap-4 p-4 rounded-xl bg-white"
-                style={{ boxShadow: "0 1px 3px rgba(0,0,0,0.04)" }}
-              >
-                <span className="text-2xl shrink-0">{item.emoji}</span>
-                <p className="text-sm leading-relaxed" style={{ color: "var(--navy)" }}>{item.text}</p>
+              { step: "01", text: "3가지 질문에 답하기" },
+              { step: "02", text: "나의 실패 유형 확인하기" },
+              { step: "03", text: "오늘 당장 할 수 있는 행동 받기" },
+            ].map(({ step, text }) => (
+              <div key={step} className="flex items-center gap-3">
+                <span
+                  className="text-xs font-black w-8 h-8 rounded-full flex items-center justify-center shrink-0"
+                  style={{ background: "rgba(212,168,83,0.2)", color: "var(--amber)" }}
+                >
+                  {step}
+                </span>
+                <span className="text-sm text-white font-medium">{text}</span>
               </div>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* ── 최종 CTA ── */}
-      <section
-        className="py-24 px-5 text-center"
-        style={{ background: "var(--navy)" }}
-      >
-        <div className="max-w-md mx-auto">
-          <div className="text-4xl mb-6">📍</div>
-          <h2 className="text-2xl font-bold text-white mb-4 leading-snug">
-            돈 쓰기 전에 먼저<br />나에게 맞는 방법을 확인하세요
-          </h2>
-          <p className="text-sm mb-10" style={{ color: "rgba(255,255,255,0.5)" }}>
-            7가지 질문으로 나에게 맞는 다이어트 유형과<br />실제 업체를 무료로 추천받으세요
-          </p>
           <Link
             href="/quiz"
-            className="inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold text-base transition-transform hover:scale-105"
+            onClick={() => void trackEvent({ eventName: "how_it_works_cta_click" })}
+            data-event="how_it_works_cta"
+            className="block w-full text-center py-4 rounded-2xl font-black text-base"
             style={{ background: "var(--amber)", color: "var(--navy)" }}
           >
-            무료로 시작하기 →
+            무료 원인 분석하기 →
           </Link>
-          <p className="mt-4 text-xs" style={{ color: "rgba(255,255,255,0.25)" }}>
-            회원가입 없이 바로 이용 가능
-          </p>
         </div>
       </section>
+
+      {/* ── 푸터 ── */}
+      <footer className="pb-10 text-center">
+        <p className="text-xs text-gray-400 px-6 leading-relaxed">
+          본 서비스는 정보 제공 목적이며 의료적 진단을 대체하지 않습니다.
+        </p>
+        <Link href="/businesses" className="inline-block mt-4 text-xs font-semibold" style={{ color: "var(--amber)" }}>
+          업체 리스트 바로 보기 →
+        </Link>
+      </footer>
     </main>
   );
 }
