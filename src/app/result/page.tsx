@@ -151,6 +151,96 @@ function PreviewSection({ failureType }: { failureType: FailureType }) {
   );
 }
 
+// ── 타겟 유형 직접 리드 캡처 ─────────────────────────────────────
+const LEAD_CAPTURE_TYPES: FailureType[] = ["stress_binge", "night_eating", "social_collapse"];
+
+const LEAD_CAPTURE_COPY: Record<string, { hook: string; sub: string }> = {
+  stress_binge:   { hook: "스트레스 폭식, 혼자 고치기 어렵습니다", sub: "이 패턴에 맞는 전문가를 무료로 연결해드려요" },
+  night_eating:   { hook: "야식 습관은 환경 설계가 핵심입니다", sub: "야식형 맞춤 관리 전문가를 연결해드려요" },
+  social_collapse:{ hook: "회식 자리에서 무너지지 않는 방법이 있습니다", sub: "행동 교정 전문가를 무료로 연결해드려요" },
+};
+
+function DirectLeadCapture({ failureType, resultLabel }: { failureType: FailureType; resultLabel: string }) {
+  const [name, setName] = useState("");
+  const [contact, setContact] = useState("");
+  const [done, setDone] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const copy = LEAD_CAPTURE_COPY[failureType] ?? { hook: "맞춤 전문가를 연결해드려요", sub: "무료로 연결해드립니다" };
+
+  useEffect(() => {
+    const saved = localStorage.getItem("wg_direct_lead_done");
+    if (saved) setDone(true);
+  }, []);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !contact.trim()) return;
+    setLoading(true);
+    await trackEvent({
+      eventName: "direct_lead_captured",
+      name: name.trim(),
+      resultType: failureType,
+      consultationIntent: resultLabel,
+      kakaoId: contact.trim().includes("@") ? undefined : contact.trim(),
+      email: contact.trim().includes("@") ? contact.trim() : undefined,
+    });
+    localStorage.setItem("wg_direct_lead_done", "1");
+    setLoading(false);
+    setDone(true);
+  }
+
+  if (done) {
+    return (
+      <div className="rounded-2xl p-6 text-center" style={{ background: "rgba(30,58,95,0.06)", border: "1.5px solid rgba(30,58,95,0.12)" }}>
+        <p className="text-2xl mb-2">✅</p>
+        <p className="font-black text-sm mb-1" style={{ color: "var(--navy)" }}>연결 신청 완료!</p>
+        <p className="text-xs text-gray-400">빠른 시일 내에 연락드리겠습니다</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ border: "2px solid var(--navy)", boxShadow: "0 4px 24px rgba(30,58,95,0.15)" }}>
+      <div className="px-5 py-4" style={{ background: "var(--navy)" }}>
+        <p className="text-xs font-black tracking-widest mb-1.5" style={{ color: "var(--amber)" }}>무료 전문가 연결</p>
+        <p className="font-black text-white text-base leading-snug">{copy.hook}</p>
+        <p className="text-xs mt-1.5" style={{ color: "rgba(255,255,255,0.5)" }}>{copy.sub}</p>
+      </div>
+      <div className="bg-white px-5 py-5">
+        <form onSubmit={handleSubmit} className="space-y-3">
+          <input
+            type="text"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="이름"
+            required
+            className="w-full px-4 py-3 rounded-xl text-sm border outline-none"
+            style={{ borderColor: "rgba(212,168,83,0.4)", background: "var(--beige)" }}
+          />
+          <input
+            type="text"
+            value={contact}
+            onChange={(e) => setContact(e.target.value)}
+            placeholder="카카오톡 ID 또는 이메일"
+            required
+            className="w-full px-4 py-3 rounded-xl text-sm border outline-none"
+            style={{ borderColor: "rgba(212,168,83,0.4)", background: "var(--beige)" }}
+          />
+          <button
+            type="submit"
+            disabled={loading || !name.trim() || !contact.trim()}
+            className="w-full py-3.5 rounded-xl font-black text-sm transition-opacity disabled:opacity-40"
+            style={{ background: "var(--amber)", color: "var(--navy)" }}
+          >
+            {loading ? "처리 중..." : "무료로 전문가 연결받기 →"}
+          </button>
+        </form>
+        <p className="text-xs text-gray-300 text-center mt-3">광고·스팸 없음 · 연락처는 매칭 목적으로만 사용</p>
+      </div>
+    </div>
+  );
+}
+
 // ── 스트레스 폭식형 전용 후킹 ────────────────────────────────────
 function StressBingeHookSection() {
   return (
@@ -327,6 +417,11 @@ export default function ResultPage() {
 
         {/* 스트레스 폭식형 전용 후킹 */}
         {failureType === "stress_binge" && <StressBingeHookSection />}
+
+        {/* 타겟 유형 직접 리드 캡처 */}
+        {LEAD_CAPTURE_TYPES.includes(failureType) && (
+          <DirectLeadCapture failureType={failureType} resultLabel={info.label} />
+        )}
 
         {/* ① 신규 수익화 CTA — 메인 */}
         <NewCTASection resultType={info.label} />
