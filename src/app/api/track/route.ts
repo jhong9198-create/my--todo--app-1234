@@ -66,6 +66,9 @@ export async function POST(req: NextRequest) {
     quitting_word: body.quittingWord ?? null,
     user_agent: body.userAgent ?? null,
     device_id: body.deviceId ?? null,
+    utm_source: body.utmSource ?? null,
+    utm_campaign: body.utmCampaign ?? null,
+    utm_medium: body.utmMedium ?? null,
   });
 
   if (error) {
