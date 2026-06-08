@@ -151,26 +151,38 @@ function PreviewSection({ failureType }: { failureType: FailureType }) {
   );
 }
 
-// ── 타겟 유형 직접 리드 캡처 ─────────────────────────────────────
-const LEAD_CAPTURE_TYPES: FailureType[] = ["stress_binge", "night_eating", "social_collapse"];
+// ── 스트레스 폭식형 전용 후킹 ────────────────────────────────────
+function StressBingeHookSection() {
+  return (
+    <div className="rounded-2xl p-6" style={{ background: "rgba(254,248,238,1)", border: "2px solid rgba(212,168,83,0.35)" }}>
+      <p className="text-xs font-black tracking-widest mb-3" style={{ color: "var(--amber)" }}>
+        잠깐, 이것 먼저 읽어보세요
+      </p>
+      <p className="font-black text-lg leading-snug mb-4" style={{ color: "var(--navy)" }}>
+        당신은 의지력이 약한 사람이 아닙니다.
+      </p>
+      <p className="text-sm leading-relaxed mb-5" style={{ color: "rgba(30,58,95,0.78)" }}>
+        스트레스를 음식으로 해소하는 패턴이 반복되고 있습니다. 문제는 식욕이 아니라, 스트레스가 올라왔을 때 자동으로 먹는 쪽으로 풀리는 <strong>습관</strong>입니다. 이 패턴을 모르면 다이어트를 다시 시작해도 같은 지점에서 무너질 가능성이 높습니다.
+      </p>
+      <div className="rounded-xl px-4 py-3.5" style={{ background: "rgba(30,58,95,0.07)" }}>
+        <p className="text-sm font-black leading-snug" style={{ color: "var(--navy)" }}>
+          💡 핵심은 덜 먹는 것이 아니라,<br />언제 무너지는지 아는 것입니다.
+        </p>
+      </div>
+    </div>
+  );
+}
 
-const LEAD_CAPTURE_COPY: Record<string, { hook: string; sub: string }> = {
-  stress_binge:   { hook: "스트레스 폭식, 혼자 고치기 어렵습니다", sub: "이 패턴에 맞는 전문가를 무료로 연결해드려요" },
-  night_eating:   { hook: "야식 습관은 환경 설계가 핵심입니다", sub: "야식형 맞춤 관리 전문가를 연결해드려요" },
-  social_collapse:{ hook: "회식 자리에서 무너지지 않는 방법이 있습니다", sub: "행동 교정 전문가를 무료로 연결해드려요" },
-};
-
-function DirectLeadCapture({ failureType, resultLabel }: { failureType: FailureType; resultLabel: string }) {
+// ── 리드 캡처 (전체 공개 게이트) ─────────────────────────────────
+function DirectLeadCapture({ failureType, resultLabel, onUnlock }: {
+  failureType: FailureType;
+  resultLabel: string;
+  onUnlock: () => void;
+}) {
   const [name, setName] = useState("");
   const [contact, setContact] = useState("");
   const [done, setDone] = useState(false);
   const [loading, setLoading] = useState(false);
-  const copy = LEAD_CAPTURE_COPY[failureType] ?? { hook: "맞춤 전문가를 연결해드려요", sub: "무료로 연결해드립니다" };
-
-  useEffect(() => {
-    const saved = localStorage.getItem("wg_direct_lead_done");
-    if (saved) setDone(true);
-  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -187,14 +199,14 @@ function DirectLeadCapture({ failureType, resultLabel }: { failureType: FailureT
     localStorage.setItem("wg_direct_lead_done", "1");
     setLoading(false);
     setDone(true);
+    setTimeout(() => onUnlock(), 700);
   }
 
   if (done) {
     return (
       <div className="rounded-2xl p-6 text-center" style={{ background: "rgba(30,58,95,0.06)", border: "1.5px solid rgba(30,58,95,0.12)" }}>
         <p className="text-2xl mb-2">✅</p>
-        <p className="font-black text-sm mb-1" style={{ color: "var(--navy)" }}>연결 신청 완료!</p>
-        <p className="text-xs text-gray-400">빠른 시일 내에 연락드리겠습니다</p>
+        <p className="font-black text-sm" style={{ color: "var(--navy)" }}>완료! 전체 분석 결과를 확인해보세요 👇</p>
       </div>
     );
   }
@@ -202,9 +214,13 @@ function DirectLeadCapture({ failureType, resultLabel }: { failureType: FailureT
   return (
     <div className="rounded-2xl overflow-hidden" style={{ border: "2px solid var(--navy)", boxShadow: "0 4px 24px rgba(30,58,95,0.15)" }}>
       <div className="px-5 py-4" style={{ background: "var(--navy)" }}>
-        <p className="text-xs font-black tracking-widest mb-1.5" style={{ color: "var(--amber)" }}>무료 전문가 연결</p>
-        <p className="font-black text-white text-base leading-snug">{copy.hook}</p>
-        <p className="text-xs mt-1.5" style={{ color: "rgba(255,255,255,0.5)" }}>{copy.sub}</p>
+        <p className="text-xs font-black tracking-widest mb-1.5" style={{ color: "var(--amber)" }}>전체 분석 결과 받기</p>
+        <p className="font-black text-white text-base leading-snug">
+          실패 원인 · 반복 패턴 · 오늘 바로 할 수 있는 행동 3가지
+        </p>
+        <p className="text-xs mt-1.5" style={{ color: "rgba(255,255,255,0.5)" }}>
+          연락처를 남기면 무료로 전체 분석 결과를 드립니다
+        </p>
       </div>
       <div className="bg-white px-5 py-5">
         <form onSubmit={handleSubmit} className="space-y-3">
@@ -232,32 +248,10 @@ function DirectLeadCapture({ failureType, resultLabel }: { failureType: FailureT
             className="w-full py-3.5 rounded-xl font-black text-sm transition-opacity disabled:opacity-40"
             style={{ background: "var(--amber)", color: "var(--navy)" }}
           >
-            {loading ? "처리 중..." : "무료로 전문가 연결받기 →"}
+            {loading ? "처리 중..." : "전체 분석 결과 보기 →"}
           </button>
         </form>
         <p className="text-xs text-gray-300 text-center mt-3">광고·스팸 없음 · 연락처는 매칭 목적으로만 사용</p>
-      </div>
-    </div>
-  );
-}
-
-// ── 스트레스 폭식형 전용 후킹 ────────────────────────────────────
-function StressBingeHookSection() {
-  return (
-    <div className="rounded-2xl p-6" style={{ background: "rgba(254,248,238,1)", border: "2px solid rgba(212,168,83,0.35)" }}>
-      <p className="text-xs font-black tracking-widest mb-3" style={{ color: "var(--amber)" }}>
-        잠깐, 이것 먼저 읽어보세요
-      </p>
-      <p className="font-black text-lg leading-snug mb-4" style={{ color: "var(--navy)" }}>
-        당신은 의지력이 약한 사람이 아닙니다.
-      </p>
-      <p className="text-sm leading-relaxed mb-5" style={{ color: "rgba(30,58,95,0.78)" }}>
-        스트레스를 음식으로 해소하는 패턴이 반복되고 있습니다. 문제는 식욕이 아니라, 스트레스가 올라왔을 때 자동으로 먹는 쪽으로 풀리는 <strong>습관</strong>입니다. 이 패턴을 모르면 다이어트를 다시 시작해도 같은 지점에서 무너질 가능성이 높습니다.
-      </p>
-      <div className="rounded-xl px-4 py-3.5" style={{ background: "rgba(30,58,95,0.07)" }}>
-        <p className="text-sm font-black leading-snug" style={{ color: "var(--navy)" }}>
-          💡 핵심은 덜 먹는 것이 아니라,<br />언제 무너지는지 아는 것입니다.
-        </p>
       </div>
     </div>
   );
@@ -317,11 +311,7 @@ function NewCTASection({ resultType }: { resultType: string }) {
       {toast && (
         <div
           className="fixed bottom-6 left-1/2 z-50 w-[88vw] max-w-sm rounded-2xl px-5 py-4"
-          style={{
-            transform: "translateX(-50%)",
-            background: "var(--navy)",
-            boxShadow: "0 8px 32px rgba(0,0,0,0.3)",
-          }}
+          style={{ transform: "translateX(-50%)", background: "var(--navy)", boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}
         >
           <p className="text-white text-sm font-black mb-1">준비 중입니다 🛠️</p>
           <p className="text-xs leading-relaxed" style={{ color: "rgba(255,255,255,0.65)" }}>
@@ -345,16 +335,19 @@ export default function ResultPage() {
   const [loading, setLoading] = useState(true);
   const [failureType, setFailureType] = useState<FailureType | null>(null);
   const [answers, setAnswers] = useState<DiagnosisAnswers | null>(null);
+  const [isUnlocked, setIsUnlocked] = useState(false);
 
   useEffect(() => {
     const raw = localStorage.getItem("wg_diagnosis");
     if (!raw) { router.push("/quiz"); return; }
     const parsed: DiagnosisAnswers = JSON.parse(raw);
     const type = getDiagnosisResult(parsed);
+    const alreadyDone = localStorage.getItem("wg_direct_lead_done") === "1";
 
     const timer = setTimeout(() => {
       setFailureType(type);
       setAnswers(parsed);
+      setIsUnlocked(alreadyDone);
       setLoading(false);
       void trackEvent({
         eventName: "diagnosis_result_viewed",
@@ -393,7 +386,7 @@ export default function ResultPage() {
 
   return (
     <main className="min-h-screen pb-24" style={{ background: "var(--beige)" }}>
-      {/* 헤더 */}
+      {/* 헤더 — 항상 표시 */}
       <div style={{ background: "var(--navy)" }} className="px-5 pt-12 pb-20 text-center">
         <div className="max-w-md mx-auto">
           <p className="text-xs font-black tracking-widest mb-4" style={{ color: "rgba(255,255,255,0.4)" }}>
@@ -412,107 +405,107 @@ export default function ResultPage() {
 
       <div className="max-w-md mx-auto px-4 -mt-10 space-y-4">
 
-        {/* 30일 후의 나 미리보기 */}
-        <PreviewSection failureType={failureType} />
-
-        {/* 스트레스 폭식형 전용 후킹 */}
+        {/* 스트레스 폭식형 훅 — 항상 표시 */}
         {failureType === "stress_binge" && <StressBingeHookSection />}
 
-        {/* 타겟 유형 직접 리드 캡처 */}
-        {LEAD_CAPTURE_TYPES.includes(failureType) && (
-          <DirectLeadCapture failureType={failureType} resultLabel={info.label} />
+        {/* 잠금 상태: 티저 + 리드 캡처 폼 */}
+        {!isUnlocked && (
+          <>
+            {/* 실패 원인 티저 */}
+            <div className="bg-white rounded-2xl p-6 relative overflow-hidden" style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.07)" }}>
+              <p className="text-xs font-black tracking-widest mb-3" style={{ color: "var(--amber)" }}>나의 실패 원인</p>
+              <p className="text-sm leading-relaxed line-clamp-2" style={{ color: "var(--navy)" }}>{info.cause}</p>
+              <div className="absolute bottom-0 left-0 right-0 h-10" style={{ background: "linear-gradient(transparent, white)" }} />
+            </div>
+
+            {/* 리드 캡처 게이트 */}
+            <DirectLeadCapture
+              failureType={failureType}
+              resultLabel={info.label}
+              onUnlock={() => setIsUnlocked(true)}
+            />
+          </>
         )}
 
-        {/* ① 신규 수익화 CTA — 메인 */}
-        <NewCTASection resultType={info.label} />
+        {/* 잠금 해제: 전체 콘텐츠 */}
+        {isUnlocked && (
+          <>
+            <PreviewSection failureType={failureType} />
+            <NewCTASection resultType={info.label} />
+            <ShareSection info={info} />
+            <AccuracyFeedback resultType={info.label} />
 
-        {/* 공유 */}
-        <ShareSection info={info} />
+            <div className="bg-white rounded-2xl p-6" style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.07)" }}>
+              <p className="text-xs font-black tracking-widest mb-3" style={{ color: "var(--amber)" }}>나의 실패 원인</p>
+              <p className="text-sm leading-relaxed" style={{ color: "var(--navy)" }}>{info.cause}</p>
+            </div>
 
-        {/* 정확도 피드백 */}
-        <AccuracyFeedback resultType={info.label} />
+            <div className="rounded-2xl p-6" style={{ background: "rgba(30,58,95,0.04)", border: "1px solid rgba(30,58,95,0.08)" }}>
+              <p className="text-xs font-black tracking-widest mb-3" style={{ color: "var(--navy)" }}>반복되는 패턴</p>
+              <p className="text-sm leading-relaxed text-gray-600">{info.pattern}</p>
+            </div>
 
-        {/* 실패 원인 */}
-        <div className="bg-white rounded-2xl p-6" style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.07)" }}>
-          <p className="text-xs font-black tracking-widest mb-3" style={{ color: "var(--amber)" }}>나의 실패 원인</p>
-          <p className="text-sm leading-relaxed" style={{ color: "var(--navy)" }}>{info.cause}</p>
-        </div>
-
-        {/* 반복되는 패턴 */}
-        <div className="rounded-2xl p-6" style={{ background: "rgba(30,58,95,0.04)", border: "1px solid rgba(30,58,95,0.08)" }}>
-          <p className="text-xs font-black tracking-widest mb-3" style={{ color: "var(--navy)" }}>반복되는 패턴</p>
-          <p className="text-sm leading-relaxed text-gray-600">{info.pattern}</p>
-        </div>
-
-        {/* 무료 행동 3가지 */}
-        <div className="bg-white rounded-2xl p-6" style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.07)" }}>
-          <p className="text-xs font-black tracking-widest mb-4" style={{ color: "var(--amber)" }}>
-            오늘 당장 할 수 있는 무료 행동 3가지
-          </p>
-          <div className="space-y-3">
-            {info.freeActions.map((action, i) => (
-              <div key={i} className="flex items-start gap-3">
-                <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 mt-0.5"
-                  style={{ background: "var(--amber)", color: "var(--navy)" }}>{i + 1}</span>
-                <p className="text-sm leading-relaxed" style={{ color: "var(--navy)" }}>{action}</p>
+            <div className="bg-white rounded-2xl p-6" style={{ boxShadow: "0 2px 16px rgba(0,0,0,0.07)" }}>
+              <p className="text-xs font-black tracking-widest mb-4" style={{ color: "var(--amber)" }}>
+                오늘 당장 할 수 있는 무료 행동 3가지
+              </p>
+              <div className="space-y-3">
+                {info.freeActions.map((action, i) => (
+                  <div key={i} className="flex items-start gap-3">
+                    <span className="w-6 h-6 rounded-full flex items-center justify-center text-xs font-black shrink-0 mt-0.5"
+                      style={{ background: "var(--amber)", color: "var(--navy)" }}>{i + 1}</span>
+                    <p className="text-sm leading-relaxed" style={{ color: "var(--navy)" }}>{action}</p>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
-        </div>
+            </div>
 
-        {/* 추천 도움 태그 */}
-        <div className="rounded-2xl p-5" style={{ background: "var(--beige)", border: "1px solid rgba(212,168,83,0.25)" }}>
-          <p className="text-xs font-black tracking-widest mb-3" style={{ color: "var(--navy)" }}>필요한 경우 추천되는 도움</p>
-          <div className="flex flex-wrap gap-2">
-            {info.helpTypes.map((type) => (
-              <Link key={type} href={`/businesses?type=${type}`}
-                onClick={() => void trackEvent({ eventName: "help_type_click", topRecommendation: type, resultType: info.label })}
-                data-event={`help_type_${type}`}
-                className="px-3 py-1.5 rounded-full text-xs font-bold"
-                style={{ background: "var(--navy)", color: "white" }}
-              >
-                {HELP_LABELS[type] ?? type}
-              </Link>
-            ))}
-          </div>
-        </div>
+            <div className="rounded-2xl p-5" style={{ background: "var(--beige)", border: "1px solid rgba(212,168,83,0.25)" }}>
+              <p className="text-xs font-black tracking-widest mb-3" style={{ color: "var(--navy)" }}>필요한 경우 추천되는 도움</p>
+              <div className="flex flex-wrap gap-2">
+                {info.helpTypes.map((type) => (
+                  <Link key={type} href={`/businesses?type=${type}`}
+                    onClick={() => void trackEvent({ eventName: "help_type_click", topRecommendation: type, resultType: info.label })}
+                    className="px-3 py-1.5 rounded-full text-xs font-bold"
+                    style={{ background: "var(--navy)", color: "white" }}
+                  >
+                    {HELP_LABELS[type] ?? type}
+                  </Link>
+                ))}
+              </div>
+            </div>
 
-        {/* ② 보조 CTA — 하단 (상담신청 포함) */}
-        <div className="rounded-2xl overflow-hidden" style={{ border: "1.5px solid rgba(30,58,95,0.1)" }}>
-          <div className="bg-white px-5 pt-5 pb-4 space-y-2.5">
-            <p className="text-xs font-black tracking-widest mb-3" style={{ color: "rgba(30,58,95,0.35)" }}>
-              기타 옵션
-            </p>
-            <button
-              onClick={() => { localStorage.removeItem("wg_diagnosis"); void trackEvent({ eventName: "cta_retry", resultType: info.label }); router.push("/quiz"); }}
-              data-event="cta_retry"
-              className="w-full py-3 rounded-xl font-semibold text-sm text-center transition-all"
-              style={{ background: "rgba(30,58,95,0.05)", color: "var(--navy)", border: "1.5px solid rgba(30,58,95,0.1)" }}
-            >
-              내 실패 원인 다시 분석하기
-            </button>
-            <Link
-              href={`/businesses?type=${info.helpTypes[0]}`}
-              onClick={() => void trackEvent({ eventName: "cta_my_solution", resultType: info.label })}
-              data-event="cta_my_solution"
-              className="block w-full text-center py-3 rounded-xl font-semibold text-sm"
-              style={{ background: "rgba(30,58,95,0.05)", color: "var(--navy)", border: "1.5px solid rgba(30,58,95,0.1)" }}
-            >
-              나에게 맞는 해결법 보기
-            </Link>
-            <Link
-              href="/businesses"
-              onClick={() => void trackEvent({ eventName: "cta_nearby", resultType: info.label })}
-              data-event="cta_nearby"
-              className="block w-full text-center py-3 rounded-xl font-semibold text-sm text-gray-400"
-              style={{ border: "1.5px solid rgba(0,0,0,0.06)" }}
-            >
-              근처 다이어트 도움 찾기
-            </Link>
-          </div>
-        </div>
+            <div className="rounded-2xl overflow-hidden" style={{ border: "1.5px solid rgba(30,58,95,0.1)" }}>
+              <div className="bg-white px-5 pt-5 pb-4 space-y-2.5">
+                <p className="text-xs font-black tracking-widest mb-3" style={{ color: "rgba(30,58,95,0.35)" }}>기타 옵션</p>
+                <button
+                  onClick={() => { localStorage.removeItem("wg_diagnosis"); void trackEvent({ eventName: "cta_retry", resultType: info.label }); router.push("/quiz"); }}
+                  className="w-full py-3 rounded-xl font-semibold text-sm text-center transition-all"
+                  style={{ background: "rgba(30,58,95,0.05)", color: "var(--navy)", border: "1.5px solid rgba(30,58,95,0.1)" }}
+                >
+                  내 실패 원인 다시 분석하기
+                </button>
+                <Link
+                  href={`/businesses?type=${info.helpTypes[0]}`}
+                  onClick={() => void trackEvent({ eventName: "cta_my_solution", resultType: info.label })}
+                  className="block w-full text-center py-3 rounded-xl font-semibold text-sm"
+                  style={{ background: "rgba(30,58,95,0.05)", color: "var(--navy)", border: "1.5px solid rgba(30,58,95,0.1)" }}
+                >
+                  나에게 맞는 해결법 보기
+                </Link>
+                <Link
+                  href="/businesses"
+                  onClick={() => void trackEvent({ eventName: "cta_nearby", resultType: info.label })}
+                  className="block w-full text-center py-3 rounded-xl font-semibold text-sm text-gray-400"
+                  style={{ border: "1.5px solid rgba(0,0,0,0.06)" }}
+                >
+                  근처 다이어트 도움 찾기
+                </Link>
+              </div>
+            </div>
+          </>
+        )}
 
-        {/* 의료 면책 안내 */}
         <p className="text-xs text-gray-400 text-center leading-relaxed px-2 pb-2">
           본 결과는 생활습관 기반의 자기 점검 리포트입니다.
           의료적 진단을 대체하지 않으며, 개인에 따라 다를 수 있습니다.
