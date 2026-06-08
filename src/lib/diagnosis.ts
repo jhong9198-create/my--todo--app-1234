@@ -98,6 +98,99 @@ export function getDiagnosisResult(answers: DiagnosisAnswers): FailureType {
   );
 }
 
+export interface TimelineDay {
+  day: 3 | 7 | 14 | 30;
+  scenario: string;
+}
+
+export interface PatternScenario {
+  humorousDescription: string;
+  timeline: TimelineDay[];
+  keyAction: string;
+  keyActionDescription: string;
+}
+
+export const PATTERN_SCENARIOS: Record<FailureType, PatternScenario> = {
+  night_eating: {
+    humorousDescription:
+      "배고파서 먹는 게 아닙니다. 오늘 하루 고생한 나를 위로하려고 먹는 겁니다. 냉장고는 그냥 열리는 게 아니라 '오늘도 수고했어'라는 알림이 뜨는 것과 같습니다. 🛎️",
+    timeline: [
+      { day: 3, scenario: "밤 10시, 냉장고 앞에서 '뭐가 있나' 확인하는 횟수가 늘어날 가능성" },
+      { day: 7, scenario: "'오늘까지만'이 세 번 이상 반복될 가능성" },
+      { day: 14, scenario: "체중계와 자연스럽게 거리두기를 시작할 가능성" },
+      { day: 30, scenario: "새로운 다이어트 방법을 다시 검색하고 있을 가능성" },
+    ],
+    keyAction: "야식 금지 대신, 밤에 먹어도 되는 간식 1개를 미리 정해두기",
+    keyActionDescription:
+      "금지보다 대체가 훨씬 오래 갑니다. 오이·방울토마토·무가당 두유 중 하나를 '허가된 야식'으로 미리 설정해보세요.",
+  },
+  stress_binge: {
+    humorousDescription:
+      "살이 찌는 이유는 음식이 아닙니다. 스트레스를 해소하는 방법이 음식뿐이기 때문일 수 있습니다. 뇌 입장에서는 '먹으면 괜찮아진다'는 학습이 이미 완료된 상태입니다. 🧠",
+    timeline: [
+      { day: 3, scenario: "스트레스 받는 날, 과식 위험이 높아질 가능성" },
+      { day: 7, scenario: "배고픔보다 감정 때문에 먹는 날이 늘어날 가능성" },
+      { day: 14, scenario: "먹고 후회 → 또 스트레스 → 또 먹는 패턴이 굳어질 가능성" },
+      { day: 30, scenario: "다이어트보다 감정 관리가 먼저라는 걸 느끼게 될 가능성" },
+    ],
+    keyAction: "먹기 전 5분, 짧은 산책 또는 찬물 세수로 감정 환기하기",
+    keyActionDescription:
+      "먹고 싶은 충동이 올 때 5분만 버티면 60%는 사라집니다. 산책이 어렵다면 찬물 세수도 충분히 효과적입니다.",
+  },
+  three_day_quit: {
+    humorousDescription:
+      "의지가 약한 게 아닙니다. 시작 목표가 너무 컸을 가능성이 높습니다. '매일 1시간 운동 + 1,200kcal'은 의지의 문제가 아니라 설계의 문제입니다. 📐",
+    timeline: [
+      { day: 3, scenario: "기록이나 운동이 조금씩 귀찮아질 가능성" },
+      { day: 7, scenario: "세워둔 계획표를 펼쳐보지 않게 될 가능성" },
+      { day: 14, scenario: "더 쉬운 다이어트 방법을 검색하기 시작할 가능성" },
+      { day: 30, scenario: "결심 1회가 더 추가된 상태로 다시 처음 시작할 가능성" },
+    ],
+    keyAction: "하루 10분짜리 행동 1개만 고정하기",
+    keyActionDescription:
+      "크게 시작하지 마세요. '저녁 식후 10분 걷기' 하나만 30일 유지하는 것이 거창한 계획 10개보다 강력합니다.",
+  },
+  plateau_despair: {
+    humorousDescription:
+      "사실 몸은 잘 반응하고 있습니다. 문제는 체중계 숫자가 멈출 때 뇌가 먼저 포기한다는 점입니다. 몸이 '적응 중'이라고 말하는 걸, 뇌가 '실패'로 번역합니다. 📉",
+    timeline: [
+      { day: 3, scenario: "체중계를 하루에 두 번 이상 확인하는 패턴이 생길 가능성" },
+      { day: 7, scenario: "'왜 안 빠지지?'라는 생각이 의욕을 조금씩 갉아먹을 가능성" },
+      { day: 14, scenario: "식단이나 운동 강도를 슬슬 줄이기 시작할 가능성" },
+      { day: 30, scenario: "정체기가 끝나기 전에 다른 방법을 찾아보고 있을 가능성" },
+    ],
+    keyAction: "체중 대신 허리둘레나 컨디션으로 진전 측정하기",
+    keyActionDescription:
+      "체중계 숫자가 안 바뀌어도 몸은 변하고 있습니다. 바지 핏이나 계단 오를 때 숨 차는 정도로 변화를 확인해보세요.",
+  },
+  social_collapse: {
+    humorousDescription:
+      "혼자 있으면 잘 참지만, 사람들과 있을 때 거절을 못하는 타입입니다. '분위기상 어쩔 수 없었어'는 변명이 아니라 실제로 일어나는 일입니다. 🍻",
+    timeline: [
+      { day: 3, scenario: "약속 자리에서 계획이 한 번쯤 흔들릴 가능성" },
+      { day: 7, scenario: "'분위기상 어쩔 수 없었다'는 상황이 반복될 가능성" },
+      { day: 14, scenario: "외부 일정 때문에 루틴이 흐트러지기 시작할 가능성" },
+      { day: 30, scenario: "사회생활과 다이어트를 어떻게 병행할지 다시 고민할 가능성" },
+    ],
+    keyAction: "약속 전 먹을 메뉴를 미리 정하거나, 덜어먹기 규칙 만들기",
+    keyActionDescription:
+      "약속 장소가 정해지면 미리 메뉴를 확인하고 먹을 것을 골라두세요. 현장의 유혹보다 사전 계획이 훨씬 강합니다.",
+  },
+  exercise_avoidance: {
+    humorousDescription:
+      "운동이 싫은 게 아닙니다. 너무 힘든 운동부터 시작했을 가능성이 높습니다. 뇌는 고통스러웠던 경험을 '운동 = 고통'으로 기억하고, 다음엔 자동으로 피하게 만듭니다. 🏃",
+    timeline: [
+      { day: 3, scenario: "운동 계획이 조금씩 뒤로 밀릴 가능성" },
+      { day: 7, scenario: "'오늘은 쉬고 내일부터' 패턴이 시작될 가능성" },
+      { day: 14, scenario: "운동 없이 식단만으로 버티려는 시도가 늘어날 가능성" },
+      { day: 30, scenario: "식단도 흐트러지면서 전체가 리셋될 가능성" },
+    ],
+    keyAction: "운동복 입고 현관 밖으로 나가기 (딱 10분만)",
+    keyActionDescription:
+      "목표를 '운동'이 아니라 '현관 밖으로 나가기'로 낮추세요. 일단 나가면 10분은 걷게 됩니다. 그게 시작입니다.",
+  },
+};
+
 export interface FailureTypeInfo {
   label: string;
   emoji: string;

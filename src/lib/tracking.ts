@@ -1,6 +1,7 @@
 export interface TrackPayload {
   eventName: string;
   createdAt?: string;
+  sessionId?: string;
   resultType?: string;
   topRecommendation?: string;
   selectedAnswers?: Record<string, unknown>;
@@ -9,6 +10,21 @@ export interface TrackPayload {
   consultationIntent?: string;
   name?: string;
   phone?: string;
+  kakaoId?: string;
+  email?: string;
+  quittingWord?: string;
+  userAgent?: string;
+}
+
+function getSessionId(): string {
+  if (typeof window === "undefined") return "";
+  const KEY = "wg_session_id";
+  let id = sessionStorage.getItem(KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    sessionStorage.setItem(KEY, id);
+  }
+  return id;
 }
 
 export async function trackEvent(payload: TrackPayload): Promise<void> {
@@ -19,6 +35,7 @@ export async function trackEvent(payload: TrackPayload): Promise<void> {
       body: JSON.stringify({
         ...payload,
         createdAt: payload.createdAt ?? new Date().toISOString(),
+        sessionId: payload.sessionId ?? getSessionId(),
       }),
     });
   } catch {

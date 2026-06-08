@@ -10,6 +10,7 @@ import {
   SERVICE_TYPE_INFO,
   Review,
 } from "@/lib/recommendation";
+import { trackEvent } from "@/lib/tracking";
 
 function StarRating({ value }: { value: number }) {
   return (
@@ -23,11 +24,117 @@ function StarRating({ value }: { value: number }) {
   );
 }
 
+function ConsultModal({ bizName, bizId, onClose }: { bizName: string; bizId: string; onClose: () => void }) {
+  const [name, setName] = useState("");
+  const [contact, setContact] = useState("");
+  const [done, setDone] = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim() || !contact.trim()) return;
+    setLoading(true);
+
+    const diagnosis = typeof window !== "undefined"
+      ? JSON.parse(localStorage.getItem("wg_diagnosis") ?? "{}")
+      : {};
+
+    await trackEvent({
+      eventName: "consultation_request_submitted",
+      name: name.trim(),
+      resultType: bizId,
+      consultationIntent: bizName,
+      kakaoId: contact.trim().includes("@") ? undefined : contact.trim(),
+      email: contact.trim().includes("@") ? contact.trim() : undefined,
+      selectedAnswers: diagnosis,
+    });
+
+    setLoading(false);
+    setDone(true);
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-end justify-center"
+      style={{ background: "rgba(0,0,0,0.5)" }}
+      onClick={onClose}
+    >
+      <div
+        className="w-full max-w-md rounded-t-3xl p-6 pb-10"
+        style={{ background: "white" }}
+        onClick={(e) => e.stopPropagation()}
+      >
+        {done ? (
+          <div className="text-center py-8">
+            <p className="text-4xl mb-4">✅</p>
+            <p className="text-lg font-black mb-2" style={{ color: "var(--navy)" }}>신청 완료!</p>
+            <p className="text-sm text-gray-500 mb-6">
+              {bizName}에 상담 신청이 접수되었습니다.<br />
+              빠른 시일 내 연락드리겠습니다.
+            </p>
+            <button
+              onClick={onClose}
+              className="px-8 py-3 rounded-2xl font-bold text-sm"
+              style={{ background: "var(--navy)", color: "white" }}
+            >
+              닫기
+            </button>
+          </div>
+        ) : (
+          <>
+            <div className="w-10 h-1 rounded-full bg-gray-200 mx-auto mb-6" />
+            <p className="font-black text-base mb-1" style={{ color: "var(--navy)" }}>상담 신청</p>
+            <p className="text-xs text-gray-400 mb-6">{bizName}</p>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div>
+                <label className="text-xs font-bold text-gray-500 mb-1.5 block">이름 *</label>
+                <input
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="이름을 입력해주세요"
+                  className="w-full px-4 py-3 rounded-xl text-sm border outline-none"
+                  style={{ borderColor: "rgba(212,168,83,0.4)", background: "var(--beige)" }}
+                  required
+                />
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-500 mb-1.5 block">
+                  카카오톡 ID 또는 이메일 *
+                </label>
+                <input
+                  type="text"
+                  value={contact}
+                  onChange={(e) => setContact(e.target.value)}
+                  placeholder="카카오 ID 또는 이메일"
+                  className="w-full px-4 py-3 rounded-xl text-sm border outline-none"
+                  style={{ borderColor: "rgba(212,168,83,0.4)", background: "var(--beige)" }}
+                  required
+                />
+              </div>
+              <button
+                type="submit"
+                disabled={loading || !name.trim() || !contact.trim()}
+                className="w-full py-4 rounded-2xl font-bold text-base transition-opacity disabled:opacity-40"
+                style={{ background: "var(--navy)", color: "white" }}
+              >
+                {loading ? "신청 중..." : "상담 신청하기"}
+              </button>
+            </form>
+            <p className="text-center text-xs text-gray-300 mt-4">연락처는 상담 목적으로만 사용됩니다</p>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function BusinessDetailPage() {
   const params = useParams();
   const id = params?.id as string;
   const biz = BUSINESSES.find((b) => b.id === id);
   const [reviews, setReviews] = useState<Review[]>([]);
+  const [showModal, setShowModal] = useState(false);
 
   useEffect(() => {
     if (!biz) return;
@@ -250,18 +357,26 @@ export default function BusinessDetailPage() {
 
         {/* 상담 버튼 */}
         <div className="pt-2">
-          <a
-            href={biz.consultLink}
+          <button
+            onClick={() => setShowModal(true)}
             className="block w-full text-center py-4 rounded-2xl font-bold text-base transition-transform hover:scale-[1.02]"
             style={{ background: "var(--navy)", color: "white" }}
           >
-            상담·예약 문의하기
-          </a>
+            상담 신청하기 →
+          </button>
           <p className="text-center text-xs mt-3 text-gray-400">
             특정 업체를 무조건 추천하지 않습니다. 직접 상담 후 결정하세요.
           </p>
         </div>
       </div>
+
+      {showModal && (
+        <ConsultModal
+          bizName={biz.name}
+          bizId={biz.id}
+          onClose={() => setShowModal(false)}
+        />
+      )}
     </main>
   );
 }

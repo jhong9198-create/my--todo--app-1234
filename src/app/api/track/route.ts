@@ -25,6 +25,7 @@ async function sendToNotion(body: Record<string, unknown>) {
       properties: {
         "문서 이름": { title: [{ text: { content: String(body.eventName ?? "") } }] },
         "Created At": { date: { start: createdAt } },
+        "Session ID": { rich_text: [{ text: { content: String(body.sessionId ?? "") } }] },
         "Result Type": { rich_text: [{ text: { content: String(body.resultType ?? "") } }] },
         "Top Recommendation": { rich_text: [{ text: { content: String(body.topRecommendation ?? "") } }] },
         "Accuracy": { rich_text: [{ text: { content: String(body.accuracy ?? "") } }] },
@@ -32,6 +33,9 @@ async function sendToNotion(body: Record<string, unknown>) {
         "Consultation Intent": { rich_text: [{ text: { content: String(body.consultationIntent ?? "") } }] },
         "Name": { rich_text: [{ text: { content: String(body.name ?? "") } }] },
         "Phone": { rich_text: [{ text: { content: String(body.phone ?? "") } }] },
+        "KakaoID": { rich_text: [{ text: { content: String(body.kakaoId ?? "") } }] },
+        "Email": { rich_text: [{ text: { content: String(body.email ?? "") } }] },
+        "QuittingWord": { rich_text: [{ text: { content: String(body.quittingWord ?? "") } }] },
       },
     }),
   }).catch((err) => console.error("[track/api] Notion 오류:", err));
@@ -48,6 +52,7 @@ export async function POST(req: NextRequest) {
   const { error } = await supabase.from("wg_events").insert({
     event_name: body.eventName,
     created_at: body.createdAt ?? new Date().toISOString(),
+    session_id: body.sessionId ?? null,
     result_type: body.resultType ?? null,
     top_recommendation: body.topRecommendation ?? null,
     selected_answers: body.selectedAnswers ?? null,
@@ -56,6 +61,10 @@ export async function POST(req: NextRequest) {
     consultation_intent: body.consultationIntent ?? null,
     name: body.name ?? null,
     phone: body.phone ?? null,
+    kakao_id: body.kakaoId ?? null,
+    email: body.email ?? null,
+    quitting_word: body.quittingWord ?? null,
+    user_agent: body.userAgent ?? null,
   });
 
   if (error) {
