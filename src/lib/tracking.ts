@@ -2,6 +2,7 @@ export interface TrackPayload {
   eventName: string;
   createdAt?: string;
   sessionId?: string;
+  deviceId?: string;
   resultType?: string;
   topRecommendation?: string;
   selectedAnswers?: Record<string, unknown>;
@@ -27,6 +28,17 @@ function getSessionId(): string {
   return id;
 }
 
+function getDeviceId(): string {
+  if (typeof window === "undefined") return "";
+  const KEY = "wg_device_id";
+  let id = localStorage.getItem(KEY);
+  if (!id) {
+    id = crypto.randomUUID();
+    localStorage.setItem(KEY, id);
+  }
+  return id;
+}
+
 export async function trackEvent(payload: TrackPayload): Promise<void> {
   try {
     await fetch("/api/track", {
@@ -36,6 +48,7 @@ export async function trackEvent(payload: TrackPayload): Promise<void> {
         ...payload,
         createdAt: payload.createdAt ?? new Date().toISOString(),
         sessionId: payload.sessionId ?? getSessionId(),
+        deviceId: payload.deviceId ?? getDeviceId(),
       }),
     });
   } catch {

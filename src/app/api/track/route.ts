@@ -65,6 +65,7 @@ export async function POST(req: NextRequest) {
     email: body.email ?? null,
     quitting_word: body.quittingWord ?? null,
     user_agent: body.userAgent ?? null,
+    device_id: body.deviceId ?? null,
   });
 
   if (error) {
