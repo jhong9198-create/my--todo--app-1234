@@ -1,11 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-);
-
 async function sendToNotion(body: Record<string, unknown>) {
   const token = process.env.NOTION_TOKEN;
   const dbId = process.env.NOTION_DATABASE_ID;
@@ -42,6 +37,11 @@ async function sendToNotion(body: Record<string, unknown>) {
 }
 
 export async function POST(req: NextRequest) {
+  const supabase = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  );
+
   let body: Record<string, unknown>;
   try {
     body = await req.json();
