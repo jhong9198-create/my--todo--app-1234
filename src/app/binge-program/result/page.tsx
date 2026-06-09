@@ -15,6 +15,9 @@ export default function BingeProgramResultPage() {
   const router = useRouter();
   const [state, setState] = useState<ProgramState | null>(null);
   const [showDeepReport, setShowDeepReport] = useState(false);
+  const [deepName, setDeepName] = useState("");
+  const [deepEmail, setDeepEmail] = useState("");
+  const [deepSubmitting, setDeepSubmitting] = useState(false);
 
   useEffect(() => {
     const program = loadProgram();
@@ -163,15 +166,40 @@ export default function BingeProgramResultPage() {
               </div>
             </div>
           ) : (
-            <button
-              onClick={() => {
-                setShowDeepReport(true);
-                trackEvent({ eventName: "deep_report_clicked" });
-              }}
-              className="w-full bg-gradient-to-r from-orange-500 to-rose-500 text-white py-3 rounded-xl font-bold text-sm"
-            >
-              무료 심층 리포트 보기
-            </button>
+            <div className="space-y-3">
+              <input
+                type="text"
+                placeholder="이름"
+                value={deepName}
+                onChange={(e) => setDeepName(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-300"
+              />
+              <input
+                type="email"
+                placeholder="이메일 주소"
+                value={deepEmail}
+                onChange={(e) => setDeepEmail(e.target.value)}
+                className="w-full bg-gray-50 border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-orange-300"
+              />
+              <button
+                disabled={!deepName.trim() || !deepEmail.trim() || deepSubmitting}
+                onClick={async () => {
+                  if (!deepName.trim() || !deepEmail.trim()) return;
+                  setDeepSubmitting(true);
+                  await trackEvent({
+                    eventName: "deep_report_clicked",
+                    name: deepName.trim(),
+                    email: deepEmail.trim(),
+                  });
+                  setDeepSubmitting(false);
+                  setShowDeepReport(true);
+                }}
+                className="w-full bg-gradient-to-r from-orange-500 to-rose-500 text-white py-3 rounded-xl font-bold text-sm disabled:opacity-40"
+              >
+                {deepSubmitting ? "확인 중..." : "무료 심층 리포트 보기"}
+              </button>
+              <p className="text-center text-gray-400 text-xs">개인정보는 리포트 발송 외 사용되지 않습니다</p>
+            </div>
           )}
         </div>
 
