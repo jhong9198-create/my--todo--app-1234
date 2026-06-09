@@ -15,6 +15,7 @@ export default function BingeProgramResultPage() {
   const router = useRouter();
   const [state, setState] = useState<ProgramState | null>(null);
   const [showDeepReport, setShowDeepReport] = useState(false);
+  const [showRiskAnalysis, setShowRiskAnalysis] = useState(false);
   const [deepName, setDeepName] = useState("");
   const [deepEmail, setDeepEmail] = useState("");
   const [deepSubmitting, setDeepSubmitting] = useState(false);
@@ -136,6 +137,98 @@ export default function BingeProgramResultPage() {
                 다음 번엔 그 감정이 올 때 먼저 알아차려 보세요.
               </p>
             </div>
+          )}
+        </div>
+
+        {/* 폭식 위험도 분석 */}
+        <div className="bg-white rounded-2xl p-5 shadow-sm">
+          <p className="text-gray-800 font-semibold text-sm mb-1">🚨 내 폭식 위험도 분석</p>
+          <p className="text-gray-500 text-xs mb-4">
+            7일 기록을 기반으로 현재 폭식 위험도를 분석합니다.
+          </p>
+          {showRiskAnalysis ? (() => {
+            const highEmotions = ["스트레스", "피곤함", "허무함"];
+            const isHighEmotion = topEmotion ? highEmotions.includes(topEmotion) : false;
+            const riskScore = Math.min(10, avgCraving + (isHighEmotion ? 1 : 0) + (completedCount < 4 ? 1 : 0));
+            const riskLevel = riskScore >= 7 ? "높음" : riskScore >= 4 ? "보통" : "낮음";
+            const riskColor = riskScore >= 7 ? "text-red-500" : riskScore >= 4 ? "text-orange-500" : "text-green-500";
+            const barColor = riskScore >= 7 ? "bg-red-500" : riskScore >= 4 ? "bg-orange-400" : "bg-green-400";
+            const riskDesc =
+              riskScore >= 7
+                ? "폭식 충동이 매우 자주, 강하게 나타나고 있습니다. 혼자 관리하기 어려운 수준일 수 있습니다."
+                : riskScore >= 4
+                ? "중간 수준의 폭식 패턴이 있습니다. 꾸준한 기록과 행동 대체 연습이 필요합니다."
+                : "폭식 충동이 비교적 낮습니다. 지금의 패턴을 유지하면 충분합니다.";
+            const tips =
+              riskScore >= 7
+                ? ["감정 일기 매일 쓰기", `${topEmotion ?? "스트레스"} 신호 오면 즉시 알아차리기`, "전문가 1:1 상담 고려하기"]
+                : riskScore >= 4
+                ? ["10분 지연 훈련 매일 반복", "대체 음식 항상 준비해두기", "주 1회 패턴 기록 돌아보기"]
+                : ["지금 습관 유지하기", "월 1회 기록 점검", "주변에 성공 경험 나누기"];
+            return (
+              <div className="space-y-4">
+                {/* 위험도 게이지 */}
+                <div>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-xs text-gray-500">위험도</span>
+                    <span className={`text-sm font-bold ${riskColor}`}>
+                      {riskLevel} ({riskScore}/10)
+                    </span>
+                  </div>
+                  <div className="w-full h-3 bg-gray-100 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full rounded-full transition-all ${barColor}`}
+                      style={{ width: `${riskScore * 10}%` }}
+                    />
+                  </div>
+                  <div className="flex justify-between mt-1">
+                    <span className="text-xs text-gray-400">낮음</span>
+                    <span className="text-xs text-gray-400">높음</span>
+                  </div>
+                </div>
+
+                {/* 위험도 설명 */}
+                <div className={`rounded-xl px-4 py-3 ${riskScore >= 7 ? "bg-red-50" : riskScore >= 4 ? "bg-orange-50" : "bg-green-50"}`}>
+                  <p className={`text-sm leading-relaxed ${riskScore >= 7 ? "text-red-800" : riskScore >= 4 ? "text-orange-800" : "text-green-800"}`}>
+                    {riskDesc}
+                  </p>
+                </div>
+
+                {/* 취약 요인 */}
+                <div className="bg-gray-50 rounded-xl px-4 py-3 space-y-2">
+                  <p className="text-xs text-gray-500 font-semibold">취약 요인</p>
+                  {avgCraving >= 6 && <p className="text-sm text-gray-700">• 평균 충동 강도가 높습니다 ({avgCraving}/10)</p>}
+                  {isHighEmotion && <p className="text-sm text-gray-700">• {topEmotion} 감정이 폭식을 자주 유발합니다</p>}
+                  {completedCount < 4 && <p className="text-sm text-gray-700">• 기록 일수가 적어 패턴 파악이 어렵습니다</p>}
+                  {avgCraving < 6 && !isHighEmotion && completedCount >= 4 && (
+                    <p className="text-sm text-gray-700">• 현재 뚜렷한 취약 요인이 없습니다</p>
+                  )}
+                </div>
+
+                {/* 개선 방향 */}
+                <div>
+                  <p className="text-xs text-gray-500 font-semibold mb-2">개선 방향</p>
+                  <div className="space-y-2">
+                    {tips.map((tip, i) => (
+                      <div key={i} className="flex items-center gap-2 bg-gray-50 rounded-xl px-4 py-2">
+                        <span className="text-orange-500 font-bold text-xs">{i + 1}</span>
+                        <span className="text-gray-700 text-sm">{tip}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            );
+          })() : (
+            <button
+              onClick={() => {
+                setShowRiskAnalysis(true);
+                trackEvent({ eventName: "binge_risk_cta_clicked" });
+              }}
+              className="w-full bg-gradient-to-r from-red-400 to-orange-500 text-white py-3 rounded-xl font-bold text-sm"
+            >
+              🚨 내 폭식 위험도 분석 보기
+            </button>
           )}
         </div>
 
