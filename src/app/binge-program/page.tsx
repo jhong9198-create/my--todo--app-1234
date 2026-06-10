@@ -19,6 +19,7 @@ export default function BingeProgramPage() {
   useEffect(() => {
     const program = loadProgram();
     setState(program);
+    void trackEvent({ eventName: "page_view_binge_program" });
   }, []);
 
   function handleStart() {

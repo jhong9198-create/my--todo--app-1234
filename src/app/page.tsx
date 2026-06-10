@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import Link from "next/link";
 import { trackEvent } from "@/lib/tracking";
 
@@ -12,6 +13,10 @@ const EMPATHY_CARDS = [
 ];
 
 export default function HomePage() {
+  useEffect(() => {
+    void trackEvent({ eventName: "page_view_landing" });
+  }, []);
+
   return (
     <main className="min-h-screen" style={{ background: "var(--warm-white)" }}>
       {/* ── Hero ── */}
@@ -20,23 +25,31 @@ export default function HomePage() {
         style={{ background: "var(--navy)" }}
       >
         <span
-          className="text-xs font-black tracking-widest mb-6 px-3 py-1 rounded-full"
+          className="text-xs font-black tracking-widest mb-5 px-3 py-1 rounded-full"
           style={{ color: "var(--amber)", background: "rgba(212,168,83,0.15)" }}
         >
           📍 다이어트 어디가?
         </span>
 
-        <h1 className="text-2xl font-black text-white leading-snug mb-4 max-w-xs">
-          당신이 다시 살이 찔 수밖에 없는
+        {/* 소셜 프루프 배지 */}
+        <div
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full mb-5 text-xs font-semibold"
+          style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }}
+        >
+          <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
+          지금까지 50명+ 진단 완료
+        </div>
+
+        <h1 className="text-2xl font-black text-white leading-snug mb-3 max-w-xs">
+          다이어트, 왜 나만
           <br />
-          <span style={{ color: "var(--amber)" }}>이유 찾기</span>
+          <span style={{ color: "var(--amber)" }}>안 될까요?</span>
         </h1>
 
-        <p className="text-sm leading-relaxed mb-2 max-w-sm" style={{ color: "rgba(255,255,255,0.55)" }}>
-          다이어트 방법은 이미 알고 있습니다.
-        </p>
-        <p className="text-sm leading-relaxed mb-10 max-w-sm" style={{ color: "rgba(255,255,255,0.75)" }}>
-          문제는 <strong className="text-white">왜 반복해서 실패하는지</strong> 모른다는 것입니다.
+        <p className="text-sm leading-relaxed mb-8 max-w-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
+          의지가 약한 게 아닙니다.<br />
+          <strong className="text-white">반복 실패에는 이유가 있습니다.</strong><br />
+          3가지 질문으로 1분 안에 찾아드립니다.
         </p>
 
         {/* Primary CTA */}
@@ -44,26 +57,26 @@ export default function HomePage() {
           href="/quiz"
           onClick={() => void trackEvent({ eventName: "hero_cta_click" })}
           data-event="hero_cta"
-          className="inline-block w-full max-w-sm px-8 py-4 rounded-2xl font-black text-base transition-transform hover:scale-[1.03] text-center"
-          style={{ background: "var(--amber)", color: "var(--navy)" }}
+          className="w-full max-w-sm py-4 rounded-2xl font-black text-base transition-transform hover:scale-[1.03] text-center block"
+          style={{ background: "var(--amber)", color: "var(--navy)", boxShadow: "0 4px 20px rgba(212,168,83,0.4)" }}
         >
-          1분 폭식 원인 진단하기 →
+          지금 바로 진단하기 →
         </Link>
-        <p className="text-xs mt-2 max-w-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
-          바로 결과를 확인하고 나에게 맞는 해결 방향을 볼 수 있어요.
+        <p className="text-xs mt-2" style={{ color: "rgba(255,255,255,0.35)" }}>
+          무료 · 1분 이내 · 즉시 결과
         </p>
 
         {/* Secondary CTA */}
         <Link
           href="/binge-program"
           onClick={() => void trackEvent({ eventName: "hero_7day_cta_click" })}
-          className="inline-block w-full max-w-sm px-8 py-3.5 rounded-2xl font-bold text-sm transition-transform hover:scale-[1.02] text-center mt-3"
-          style={{ background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.75)", border: "1.5px solid rgba(255,255,255,0.2)" }}
+          className="w-full max-w-sm py-3.5 rounded-2xl font-bold text-sm transition-transform hover:scale-[1.02] text-center block mt-3"
+          style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.65)", border: "1.5px solid rgba(255,255,255,0.15)" }}
         >
           7일 폭식 기록 시작하기
         </Link>
-        <p className="text-xs mt-2 max-w-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
-          매일 2분 기록하면 내 폭식 패턴 리포트가 더 정확해져요.
+        <p className="text-xs mt-2" style={{ color: "rgba(255,255,255,0.25)" }}>
+          매일 2분 기록하면 내 폭식 패턴이 보여요.
         </p>
 
         <div
