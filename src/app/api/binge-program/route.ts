@@ -13,7 +13,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { error } = await supabase.from("binge_program_logs").insert({
+  const { data, error } = await supabase.from("binge_program_logs").insert({
     session_id: body.session_id ?? null,
     day_number: body.day_number ?? null,
     craving_level: body.craving_level ?? null,
@@ -21,12 +21,13 @@ export async function POST(req: NextRequest) {
     action_taken: body.action_taken ?? null,
     completed: body.completed ?? false,
     memo: body.memo ?? null,
-  });
+  }).select();
 
   if (error) {
-    console.error("[binge-program/api] Supabase 오류:", error.message);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[binge-program/api] insert error:", JSON.stringify(error));
+    return NextResponse.json({ error: error.message, details: error }, { status: 500 });
   }
 
-  return NextResponse.json({ ok: true });
+  console.log("[binge-program/api] insert success:", JSON.stringify(data));
+  return NextResponse.json({ ok: true, data });
 }

@@ -68,20 +68,30 @@ export default function DayPage() {
         ? sessionStorage.getItem("wg_session_id") ?? undefined
         : undefined;
 
-    // Supabase 저장 (fire-and-forget)
-    fetch("/api/binge-program", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        session_id: sessionId,
-        day_number: dayNum,
-        craving_level: cravingLevel,
-        emotion: emotion || null,
-        action_taken: actionTaken || null,
-        completed: true,
-        memo: memo || null,
-      }),
-    }).catch(() => {});
+    // Supabase 저장
+    try {
+      const res = await fetch("/api/binge-program", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          session_id: sessionId,
+          day_number: dayNum,
+          craving_level: cravingLevel,
+          emotion: emotion || null,
+          action_taken: actionTaken || null,
+          completed: true,
+          memo: memo || null,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok) {
+        console.error("[binge-program/day] 저장 실패:", json);
+      } else {
+        console.log("[binge-program/day] 저장 성공:", json);
+      }
+    } catch (e) {
+      console.error("[binge-program/day] fetch 오류:", e);
+    }
 
     trackEvent({
       eventName: "binge_program_day_completed",
