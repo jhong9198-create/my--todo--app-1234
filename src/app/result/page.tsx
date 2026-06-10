@@ -173,6 +173,41 @@ function StressBingeHookSection() {
   );
 }
 
+// ── 잠금 전 공유 버튼 ─────────────────────────────────────────────
+function LockedShareButton({ info }: { info: (typeof FAILURE_TYPE_INFO)[FailureType] }) {
+  const [copied, setCopied] = useState(false);
+  const shareText = `나의 다이어트 실패 유형은 ${info.emoji} ${info.label}\n\n3가지 질문으로 내 실패 패턴을 알아봤어요.\n너도 해봐 👇\n${SITE_URL}`;
+
+  async function handleShare() {
+    void trackEvent({ eventName: "locked_share_click", resultType: info.label });
+    if (navigator.share) {
+      try { await navigator.share({ title: `나의 다이어트 실패 유형: ${info.label}`, text: shareText, url: SITE_URL }); }
+      catch { /* 취소 */ }
+    } else {
+      await navigator.clipboard.writeText(shareText);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  }
+
+  return (
+    <div className="rounded-2xl p-5 text-center" style={{ background: "rgba(254,248,238,1)", border: "2px solid rgba(212,168,83,0.4)" }}>
+      <p className="text-sm font-black mb-1" style={{ color: "var(--navy)" }}>
+        {info.emoji} 나는 <span style={{ color: "var(--amber)" }}>{info.label}</span>이래!
+      </p>
+      <p className="text-xs text-gray-400 mb-4">친구한테 공유하면 친구 유형도 알 수 있어요</p>
+      <button
+        onClick={handleShare}
+        className="w-full py-3.5 rounded-xl font-black text-sm transition-all hover:scale-[1.02] flex items-center justify-center gap-2"
+        style={{ background: copied ? "var(--navy)" : "#FEE500", color: "#3A1D1D" }}
+      >
+        <span className="text-base">💬</span>
+        <span>{copied ? "✓ 링크 복사됨!" : "카카오톡으로 공유하기"}</span>
+      </button>
+    </div>
+  );
+}
+
 // ── 리드 캡처 (전체 공개 게이트) ─────────────────────────────────
 function DirectLeadCapture({ failureType, resultLabel, onUnlock }: {
   failureType: FailureType;
@@ -417,6 +452,9 @@ export default function ResultPage() {
               <p className="text-sm leading-relaxed line-clamp-2" style={{ color: "var(--navy)" }}>{info.cause}</p>
               <div className="absolute bottom-0 left-0 right-0 h-10" style={{ background: "linear-gradient(transparent, white)" }} />
             </div>
+
+            {/* 카카오톡 공유 버튼 (잠금 전) */}
+            <LockedShareButton info={info} />
 
             {/* 리드 캡처 게이트 */}
             <DirectLeadCapture
