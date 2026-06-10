@@ -219,8 +219,31 @@ function BusinessesContent() {
           </div>
         )}
 
+        {/* 카카오 오픈채팅 CTA */}
+        <div className="rounded-2xl overflow-hidden" style={{ border: "2px solid var(--navy)", boxShadow: "0 4px 20px rgba(30,58,95,0.12)" }}>
+          <div className="px-5 py-4" style={{ background: "var(--navy)" }}>
+            <p className="text-xs font-black tracking-widest mb-1" style={{ color: "var(--amber)" }}>무료 커뮤니티</p>
+            <p className="font-black text-white text-sm leading-snug">
+              다이어트 고민, 오픈채팅에서 같이 이야기해요
+            </p>
+          </div>
+          <div className="bg-white px-5 py-4">
+            <a
+              href="https://open.kakao.com/o/pJpkL2yi"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => void trackEvent({ eventName: "kakao_openchat_businesses_clicked" })}
+              className="flex items-center justify-center gap-3 w-full py-3.5 rounded-xl font-black text-base transition-all hover:scale-[1.02]"
+              style={{ background: "#FEE500", color: "#3A1D1D" }}
+            >
+              <span className="text-xl">💬</span>
+              <span>카카오 오픈채팅 참여하기</span>
+            </a>
+          </div>
+        </div>
+
         {/* 하단 CTA */}
-        <div className="pt-4">
+        <div className="pt-2 pb-4">
           <Link
             href="/quiz"
             className="block w-full text-center py-4 rounded-2xl font-bold text-sm"

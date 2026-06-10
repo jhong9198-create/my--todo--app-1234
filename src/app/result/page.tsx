@@ -13,6 +13,7 @@ import {
 import { trackEvent } from "@/lib/tracking";
 
 const SITE_URL = "https://my-todo-app-three-woad.vercel.app";
+const KAKAO_OPENCHAT_URL = "https://open.kakao.com/o/pJpkL2yi";
 
 // ── 공유 ─────────────────────────────────────────────────────────
 function ShareSection({ info }: { info: (typeof FAILURE_TYPE_INFO)[FailureType] }) {
@@ -208,85 +209,44 @@ function LockedShareButton({ info }: { info: (typeof FAILURE_TYPE_INFO)[FailureT
   );
 }
 
-// ── 리드 캡처 (전체 공개 게이트) ─────────────────────────────────
-function DirectLeadCapture({ failureType, resultLabel, onUnlock }: {
+// ── 카카오 오픈채팅 게이트 ────────────────────────────────────────
+function KakaoOpenChatGate({ failureType, resultLabel, onUnlock }: {
   failureType: FailureType;
   resultLabel: string;
   onUnlock: () => void;
 }) {
-  const [name, setName] = useState("");
-  const [contact, setContact] = useState("");
-  const [done, setDone] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    if (!name.trim() || !contact.trim()) return;
-    setLoading(true);
-    await trackEvent({
-      eventName: "direct_lead_captured",
-      name: name.trim(),
+  function handleJoin() {
+    void trackEvent({
+      eventName: "kakao_openchat_join_clicked",
       resultType: failureType,
       consultationIntent: resultLabel,
-      kakaoId: contact.trim().includes("@") ? undefined : contact.trim(),
-      email: contact.trim().includes("@") ? contact.trim() : undefined,
     });
     localStorage.setItem("wg_direct_lead_done", "1");
-    setLoading(false);
-    setDone(true);
-    setTimeout(() => onUnlock(), 700);
-  }
-
-  if (done) {
-    return (
-      <div className="rounded-2xl p-6 text-center" style={{ background: "rgba(30,58,95,0.06)", border: "1.5px solid rgba(30,58,95,0.12)" }}>
-        <p className="text-2xl mb-2">✅</p>
-        <p className="font-black text-sm" style={{ color: "var(--navy)" }}>완료! 전체 분석 결과를 확인해보세요 👇</p>
-      </div>
-    );
+    window.open(KAKAO_OPENCHAT_URL, "_blank");
+    setTimeout(() => onUnlock(), 400);
   }
 
   return (
     <div className="rounded-2xl overflow-hidden" style={{ border: "2px solid var(--navy)", boxShadow: "0 4px 24px rgba(30,58,95,0.15)" }}>
       <div className="px-5 py-4" style={{ background: "var(--navy)" }}>
-        <p className="text-xs font-black tracking-widest mb-1.5" style={{ color: "var(--amber)" }}>전체 분석 결과 받기</p>
+        <p className="text-xs font-black tracking-widest mb-1.5" style={{ color: "var(--amber)" }}>전체 분석 결과 보기</p>
         <p className="font-black text-white text-base leading-snug">
           실패 원인 · 반복 패턴 · 오늘 바로 할 수 있는 행동 3가지
         </p>
         <p className="text-xs mt-1.5" style={{ color: "rgba(255,255,255,0.5)" }}>
-          연락처를 남기면 무료로 전체 분석 결과를 드립니다
+          카카오 오픈채팅 참여 시 무료로 전체 결과를 공개합니다
         </p>
       </div>
       <div className="bg-white px-5 py-5">
-        <form onSubmit={handleSubmit} className="space-y-3">
-          <input
-            type="text"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="이름"
-            required
-            className="w-full px-4 py-3 rounded-xl text-sm border outline-none"
-            style={{ borderColor: "rgba(212,168,83,0.4)", background: "var(--beige)" }}
-          />
-          <input
-            type="text"
-            value={contact}
-            onChange={(e) => setContact(e.target.value)}
-            placeholder="카카오톡 ID 또는 이메일"
-            required
-            className="w-full px-4 py-3 rounded-xl text-sm border outline-none"
-            style={{ borderColor: "rgba(212,168,83,0.4)", background: "var(--beige)" }}
-          />
-          <button
-            type="submit"
-            disabled={loading || !name.trim() || !contact.trim()}
-            className="w-full py-3.5 rounded-xl font-black text-sm transition-opacity disabled:opacity-40"
-            style={{ background: "var(--amber)", color: "var(--navy)" }}
-          >
-            {loading ? "처리 중..." : "전체 분석 결과 보기 →"}
-          </button>
-        </form>
-        <p className="text-xs text-gray-300 text-center mt-3">광고·스팸 없음 · 연락처는 매칭 목적으로만 사용</p>
+        <button
+          onClick={handleJoin}
+          className="w-full py-4 rounded-xl font-black text-base transition-all hover:scale-[1.02] flex items-center justify-center gap-3"
+          style={{ background: "#FEE500", color: "#3A1D1D" }}
+        >
+          <span className="text-xl">💬</span>
+          <span>카카오 오픈채팅 참여하기</span>
+        </button>
+        <p className="text-xs text-gray-400 text-center mt-3">무료 · 광고 없음 · 언제든 나갈 수 있어요</p>
       </div>
     </div>
   );
@@ -456,8 +416,8 @@ export default function ResultPage() {
             {/* 카카오톡 공유 버튼 (잠금 전) */}
             <LockedShareButton info={info} />
 
-            {/* 리드 캡처 게이트 */}
-            <DirectLeadCapture
+            {/* 카카오 오픈채팅 게이트 */}
+            <KakaoOpenChatGate
               failureType={failureType}
               resultLabel={info.label}
               onUnlock={() => setIsUnlocked(true)}

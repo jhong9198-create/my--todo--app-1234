@@ -156,6 +156,35 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* ── 카카오 오픈채팅 ── */}
+      <section className="px-4 pb-10 max-w-md mx-auto">
+        <div className="rounded-3xl overflow-hidden" style={{ border: "2px solid var(--navy)" }}>
+          <div className="px-6 py-5" style={{ background: "var(--navy)" }}>
+            <p className="text-xs font-black tracking-widest mb-1" style={{ color: "var(--amber)" }}>FREE COMMUNITY</p>
+            <p className="font-black text-white text-base leading-snug">
+              다이어트 고민, 혼자 하지 마세요
+            </p>
+            <p className="text-xs mt-1.5" style={{ color: "rgba(255,255,255,0.45)" }}>
+              오픈채팅에서 같이 이야기해요
+            </p>
+          </div>
+          <div className="bg-white px-6 py-5">
+            <a
+              href="https://open.kakao.com/o/pJpkL2yi"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => void trackEvent({ eventName: "kakao_openchat_landing_clicked" })}
+              className="flex items-center justify-center gap-3 w-full py-4 rounded-2xl font-black text-base transition-all hover:scale-[1.02]"
+              style={{ background: "#FEE500", color: "#3A1D1D" }}
+            >
+              <span className="text-xl">💬</span>
+              <span>카카오 오픈채팅 참여하기</span>
+            </a>
+            <p className="text-xs text-gray-400 text-center mt-3">무료 · 부담 없음 · 언제든 나갈 수 있어요</p>
+          </div>
+        </div>
+      </section>
+
       {/* ── 푸터 ── */}
       <footer className="pb-10 text-center">
         <p className="text-xs text-gray-400 px-6 leading-relaxed">
