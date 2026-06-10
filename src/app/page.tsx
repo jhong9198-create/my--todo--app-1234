@@ -39,18 +39,31 @@ export default function HomePage() {
           문제는 <strong className="text-white">왜 반복해서 실패하는지</strong> 모른다는 것입니다.
         </p>
 
+        {/* Primary CTA */}
         <Link
           href="/quiz"
           onClick={() => void trackEvent({ eventName: "hero_cta_click" })}
           data-event="hero_cta"
-          className="inline-block px-8 py-4 rounded-2xl font-black text-base transition-transform hover:scale-[1.03]"
+          className="inline-block w-full max-w-sm px-8 py-4 rounded-2xl font-black text-base transition-transform hover:scale-[1.03] text-center"
           style={{ background: "var(--amber)", color: "var(--navy)" }}
         >
-          내 실패 원인 분석하기 →
+          1분 폭식 원인 진단하기 →
         </Link>
+        <p className="text-xs mt-2 max-w-xs" style={{ color: "rgba(255,255,255,0.45)" }}>
+          바로 결과를 확인하고 나에게 맞는 해결 방향을 볼 수 있어요.
+        </p>
 
-        <p className="text-xs mt-4" style={{ color: "rgba(255,255,255,0.3)" }}>
-          3가지 질문 · 1분 이내 · 무료
+        {/* Secondary CTA */}
+        <Link
+          href="/binge-program"
+          onClick={() => void trackEvent({ eventName: "hero_7day_cta_click" })}
+          className="inline-block w-full max-w-sm px-8 py-3.5 rounded-2xl font-bold text-sm transition-transform hover:scale-[1.02] text-center mt-3"
+          style={{ background: "rgba(255,255,255,0.1)", color: "rgba(255,255,255,0.75)", border: "1.5px solid rgba(255,255,255,0.2)" }}
+        >
+          7일 폭식 기록 시작하기
+        </Link>
+        <p className="text-xs mt-2 max-w-xs" style={{ color: "rgba(255,255,255,0.3)" }}>
+          매일 2분 기록하면 내 폭식 패턴 리포트가 더 정확해져요.
         </p>
 
         <div

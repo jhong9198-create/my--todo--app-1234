@@ -145,12 +145,12 @@ export default function BingeProgramPage() {
           >
             {state && completedDays.length > 0
               ? `DAY ${nextDay} 미션 이어하기 →`
-              : "DAY 1 시작하기 →"}
+              : "내 폭식 패턴 7일 기록하기 →"}
           </button>
         )}
 
-        <p className="text-center text-gray-400 text-xs pb-4">
-          매일 2분이면 충분합니다 · 무료 · 7일 프로그램
+        <p className="text-center text-gray-500 text-xs pb-4 leading-relaxed">
+          하루 2분만 기록하면, 어떤 감정과 시간대에<br />폭식이 반복되는지 볼 수 있어요.
         </p>
       </div>
     </main>

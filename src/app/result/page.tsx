@@ -544,6 +544,23 @@ export default function ResultPage() {
           </>
         )}
 
+        {/* 7일 기록 유도 CTA */}
+        <div className="rounded-2xl p-6" style={{ background: "var(--navy)", boxShadow: "0 4px 20px rgba(30,58,95,0.18)" }}>
+          <p className="text-xs font-black tracking-widest mb-2" style={{ color: "var(--amber)" }}>더 정확한 리포트 받기</p>
+          <p className="font-black text-white text-base leading-snug mb-2">내 폭식 패턴 7일 기록하기</p>
+          <p className="text-xs leading-relaxed mb-5" style={{ color: "rgba(255,255,255,0.55)" }}>
+            하루 2분만 기록하면, 어떤 감정과 시간대에<br />폭식이 반복되는지 볼 수 있어요.
+          </p>
+          <Link
+            href="/binge-program"
+            onClick={() => void trackEvent({ eventName: "result_7day_program_click", resultType: info.label })}
+            className="block w-full text-center py-4 rounded-2xl font-black text-sm transition-all hover:scale-[1.02]"
+            style={{ background: "var(--amber)", color: "var(--navy)" }}
+          >
+            7일 기록으로 더 정확한 리포트 받기 →
+          </Link>
+        </div>
+
         <p className="text-xs text-gray-400 text-center leading-relaxed px-2 pb-2">
           본 결과는 생활습관 기반의 자기 점검 리포트입니다.
           의료적 진단을 대체하지 않으며, 개인에 따라 다를 수 있습니다.

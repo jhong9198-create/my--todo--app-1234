@@ -335,24 +335,28 @@ export default function BingeProgramResultPage() {
 
         {/* CTA 버튼들 */}
         <div className="space-y-3 pt-2">
+          {/* 전문가 추천받기 — 가장 강조 */}
+          <div className="rounded-2xl overflow-hidden" style={{ background: "linear-gradient(135deg, #f97316, #e11d48)", boxShadow: "0 6px 24px rgba(249,115,22,0.35)" }}>
+            <button
+              onClick={() => {
+                void trackEvent({ eventName: "expert_recommendation_clicked" });
+                router.push("/businesses");
+              }}
+              className="w-full text-white py-5 font-black text-base"
+            >
+              <span className="block text-lg mb-0.5">🏥 전문가 추천받기</span>
+              <span className="block text-xs font-medium opacity-80">내 패턴에 맞는 전문가를 바로 연결해드려요</span>
+            </button>
+          </div>
           <button
             onClick={handleRestart}
-            className="w-full bg-white border-2 border-orange-400 text-orange-500 py-3 rounded-xl font-bold"
+            className="w-full bg-white border-2 border-orange-400 text-orange-500 py-3.5 rounded-xl font-bold"
           >
             🔄 다시 7일 시작하기
           </button>
           <button
-            onClick={() => {
-              trackEvent({ eventName: "expert_recommendation_clicked" });
-              router.push("/businesses");
-            }}
-            className="w-full bg-gradient-to-r from-orange-500 to-rose-500 text-white py-3 rounded-xl font-bold"
-          >
-            전문가 추천받기 →
-          </button>
-          <button
             onClick={() => router.push("/quiz")}
-            className="w-full bg-gray-100 text-gray-600 py-3 rounded-xl font-semibold text-sm"
+            className="w-full bg-gray-100 text-gray-500 py-3 rounded-xl font-semibold text-sm"
           >
             폭식 실패 원인 다시 진단하기
           </button>
