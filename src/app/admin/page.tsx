@@ -2,6 +2,93 @@ import { createClient } from "@supabase/supabase-js";
 
 const ADMIN_PW = process.env.ADMIN_PASSWORD ?? "diet2024";
 
+const CTA_EVENTS = [
+  "hero_cta_click", "how_it_works_cta_click", "hero_7day_cta_click",
+  "relapse_7day_cta_click", "binge_risk_cta_clicked", "deep_report_notify_clicked",
+  "beta_tester_clicked", "cta_retry", "cta_my_solution", "cta_nearby",
+  "result_7day_program_click", "locked_share_click", "result_share_click",
+];
+
+function getKSTRanges() {
+  const KST = 9 * 60 * 60 * 1000;
+  const nowUTC = Date.now();
+  const nowKST = nowUTC + KST;
+  const todayKSTMidnight = nowKST - (nowKST % (24 * 60 * 60 * 1000));
+  const todayStart = new Date(todayKSTMidnight - KST).toISOString();
+  const todayEnd = new Date(todayKSTMidnight - KST + 24 * 60 * 60 * 1000).toISOString();
+  const yesterdayStart = new Date(todayKSTMidnight - KST - 24 * 60 * 60 * 1000).toISOString();
+  const yesterdayEnd = todayStart;
+  return { todayStart, todayEnd, yesterdayStart, yesterdayEnd };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function getDailyStats(supabase: any) {
+  const { todayStart, todayEnd, yesterdayStart, yesterdayEnd } = getKSTRanges();
+
+  const [
+    todayEvents,
+    yesterdayEvents,
+    todaySessions,
+    yesterdaySessions,
+    todayCTA,
+    yesterdayCTA,
+    todayBinge,
+    yesterdayBinge,
+    todayPageView,
+    yesterdayPageView,
+  ] = await Promise.all([
+    supabase.from("wg_events").select("*", { count: "exact", head: true })
+      .gte("created_at", todayStart).lt("created_at", todayEnd),
+    supabase.from("wg_events").select("*", { count: "exact", head: true })
+      .gte("created_at", yesterdayStart).lt("created_at", yesterdayEnd),
+
+    supabase.from("wg_events").select("session_id")
+      .gte("created_at", todayStart).lt("created_at", todayEnd).not("session_id", "is", null),
+    supabase.from("wg_events").select("session_id")
+      .gte("created_at", yesterdayStart).lt("created_at", yesterdayEnd).not("session_id", "is", null),
+
+    supabase.from("wg_events").select("*", { count: "exact", head: true })
+      .in("event_name", CTA_EVENTS).gte("created_at", todayStart).lt("created_at", todayEnd),
+    supabase.from("wg_events").select("*", { count: "exact", head: true })
+      .in("event_name", CTA_EVENTS).gte("created_at", yesterdayStart).lt("created_at", yesterdayEnd),
+
+    supabase.from("binge_program_logs").select("*", { count: "exact", head: true })
+      .gte("created_at", todayStart).lt("created_at", todayEnd),
+    supabase.from("binge_program_logs").select("*", { count: "exact", head: true })
+      .gte("created_at", yesterdayStart).lt("created_at", yesterdayEnd),
+
+    supabase.from("wg_events").select("*", { count: "exact", head: true })
+      .eq("event_name", "page_view_landing").gte("created_at", todayStart).lt("created_at", todayEnd),
+    supabase.from("wg_events").select("*", { count: "exact", head: true })
+      .eq("event_name", "page_view_landing").gte("created_at", yesterdayStart).lt("created_at", yesterdayEnd),
+  ]);
+
+  if (todayEvents.error) console.log("[admin] wg_events 오늘 오류:", todayEvents.error);
+  if (yesterdayEvents.error) console.log("[admin] wg_events 어제 오류:", yesterdayEvents.error);
+  if (todayBinge.error) console.log("[admin] binge_program_logs 오늘 오류:", todayBinge.error);
+  if (yesterdayBinge.error) console.log("[admin] binge_program_logs 어제 오류:", yesterdayBinge.error);
+
+  const todayUnique = new Set((todaySessions.data ?? []).map((r: { session_id: string }) => r.session_id)).size;
+  const yesterdayUnique = new Set((yesterdaySessions.data ?? []).map((r: { session_id: string }) => r.session_id)).size;
+
+  return {
+    today: {
+      events: todayEvents.count ?? 0,
+      sessions: todayUnique,
+      cta: todayCTA.count ?? 0,
+      binge: todayBinge.error ? null : (todayBinge.count ?? 0),
+      pageView: todayPageView.count ?? 0,
+    },
+    yesterday: {
+      events: yesterdayEvents.count ?? 0,
+      sessions: yesterdayUnique,
+      cta: yesterdayCTA.count ?? 0,
+      binge: yesterdayBinge.error ? null : (yesterdayBinge.count ?? 0),
+      pageView: yesterdayPageView.count ?? 0,
+    },
+  };
+}
+
 function formatDate(iso: string) {
   const d = new Date(iso);
   return `${d.getMonth() + 1}/${d.getDate()} ${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
@@ -40,6 +127,8 @@ export default async function AdminPage({
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   );
 
+  const dailyStats = await getDailyStats(supabase);
+
   const [
     { data: leads },
     { count: totalEvents },
@@ -76,6 +165,61 @@ export default async function AdminPage({
         <div className="mb-8">
           <p className="text-xs font-bold tracking-widest text-amber-600 mb-1">ADMIN DASHBOARD</p>
           <h1 className="text-2xl font-black" style={{ color: "#1a2744" }}>다이어트 어디가? 관리자</h1>
+        </div>
+
+        {/* 오늘/어제 통계 */}
+        <div className="bg-white rounded-2xl p-6 mb-6 shadow-sm">
+          <p className="text-xs font-black tracking-widest text-amber-600 mb-4">오늘 / 어제 통계 (KST)</p>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+            {[
+              {
+                label: "랜딩 방문",
+                today: dailyStats.today.pageView,
+                yesterday: dailyStats.yesterday.pageView,
+              },
+              {
+                label: "고유 세션",
+                today: dailyStats.today.sessions,
+                yesterday: dailyStats.yesterday.sessions,
+              },
+              {
+                label: "전체 이벤트",
+                today: dailyStats.today.events,
+                yesterday: dailyStats.yesterday.events,
+              },
+              {
+                label: "CTA 클릭",
+                today: dailyStats.today.cta,
+                yesterday: dailyStats.yesterday.cta,
+              },
+              {
+                label: "폭식 프로그램 저장",
+                today: dailyStats.today.binge,
+                yesterday: dailyStats.yesterday.binge,
+              },
+            ].map((item) => (
+              <div key={item.label} className="rounded-xl p-4" style={{ background: "#f9f5ec" }}>
+                <p className="text-xs text-gray-500 mb-2 font-semibold">{item.label}</p>
+                <div className="flex items-end gap-3">
+                  <div>
+                    <p className="text-2xl font-black" style={{ color: "#1a2744" }}>
+                      {item.today === null ? "—" : item.today}
+                    </p>
+                    <p className="text-xs text-amber-500 font-semibold">오늘</p>
+                  </div>
+                  <div className="mb-0.5">
+                    <p className="text-lg font-bold text-gray-400">
+                      {item.yesterday === null ? "—" : item.yesterday}
+                    </p>
+                    <p className="text-xs text-gray-400">어제</p>
+                  </div>
+                </div>
+                {item.today === null && item.yesterday === null && (
+                  <p className="text-xs text-gray-400 mt-1">폭식 프로그램 저장 데이터 없음</p>
+                )}
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* 핵심 지표 */}
