@@ -504,6 +504,27 @@ export default function ResultPage() {
           </>
         )}
 
+        {/* 매일 충동 체크인 */}
+        <div className="rounded-2xl overflow-hidden" style={{ border: "2px solid var(--navy)" }}>
+          <div className="px-5 py-4" style={{ background: "var(--navy)" }}>
+            <p className="text-xs font-black tracking-widest mb-1" style={{ color: "var(--amber)" }}>DAILY CHECK-IN</p>
+            <p className="font-black text-white text-sm leading-snug">오늘 폭식 충동 몇 점이에요?</p>
+            <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.5)" }}>
+              하루 5초 기록 → 7일 후 내 위험 패턴이 보여요
+            </p>
+          </div>
+          <div className="bg-white px-5 py-4">
+            <Link
+              href="/checkin"
+              onClick={() => void trackEvent({ eventName: "result_checkin_click", resultType: info.label })}
+              className="block w-full text-center py-3.5 rounded-xl font-black text-sm"
+              style={{ background: "var(--amber)", color: "var(--navy)" }}
+            >
+              오늘 충동 기록하기 →
+            </Link>
+          </div>
+        </div>
+
         {/* 7일 기록 유도 CTA */}
         <div className="rounded-2xl p-6" style={{ background: "var(--navy)", boxShadow: "0 4px 20px rgba(30,58,95,0.18)" }}>
           <p className="text-xs font-black tracking-widest mb-2" style={{ color: "var(--amber)" }}>더 정확한 리포트 받기</p>
