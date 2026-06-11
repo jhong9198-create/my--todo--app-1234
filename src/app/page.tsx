@@ -4,12 +4,13 @@ import { useEffect } from "react";
 import Link from "next/link";
 import { trackEvent } from "@/lib/tracking";
 
-const EMPATHY_CARDS = [
-  { emoji: "🤔", text: "분명 적게 먹는데 살이 잘 안 빠져요" },
-  { emoji: "🌙", text: "밤마다 야식을 못 참겠어요" },
-  { emoji: "📅", text: "항상 3일 하고 포기해요" },
-  { emoji: "📊", text: "정체기만 오면 무너져요" },
-  { emoji: "🍽️", text: "운동보다 먹는 게 문제 같아요" },
+const BENEFIT_CARDS = [
+  { emoji: "🎯", title: "실패 원인 파악", text: "왜 반복해서 실패하는지 드디어 알게 돼요" },
+  { emoji: "🗓️", title: "위험 패턴 발견", text: "내가 무너지는 요일·시간대가 데이터로 보여요" },
+  { emoji: "🧠", title: "자책에서 해방", text: "의지 문제가 아니었음을 확인하고 마음이 편해져요" },
+  { emoji: "💬", title: "같은 사람들과 연결", text: "같은 유형끼리 오픈채팅에서 솔직하게 이야기해요" },
+  { emoji: "📊", title: "폭식 트리거 리포트", text: "7일 기록하면 나만의 충동 패턴 리포트가 생겨요" },
+  { emoji: "🔄", title: "반복 실수 방지", text: "다음 다이어트에서 같은 실수를 반복하지 않아요" },
 ];
 
 export default function HomePage() {
@@ -21,7 +22,7 @@ export default function HomePage() {
     <main className="min-h-screen" style={{ background: "var(--warm-white)" }}>
       {/* ── Hero ── */}
       <section
-        className="relative px-5 pt-14 pb-16 flex flex-col items-center text-center"
+        className="relative px-5 pt-14 pb-20 flex flex-col items-center text-center"
         style={{ background: "var(--navy)" }}
       >
         <span
@@ -31,9 +32,8 @@ export default function HomePage() {
           📍 다이어트 어디가?
         </span>
 
-        {/* 소셜 프루프 배지 */}
         <div
-          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full mb-5 text-xs font-semibold"
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-full mb-6 text-xs font-semibold"
           style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.6)" }}
         >
           <span className="w-1.5 h-1.5 rounded-full bg-green-400 inline-block" />
@@ -41,16 +41,32 @@ export default function HomePage() {
         </div>
 
         <h1 className="text-2xl font-black text-white leading-snug mb-3 max-w-xs">
-          다이어트, 왜 나만
-          <br />
-          <span style={{ color: "var(--amber)" }}>안 될까요?</span>
+          다이어트가 안 됐던 건<br />
+          <span style={{ color: "var(--amber)" }}>의지 문제가 아니에요</span>
         </h1>
 
-        <p className="text-sm leading-relaxed mb-8 max-w-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
-          의지가 약한 게 아닙니다.<br />
-          <strong className="text-white">반복 실패에는 이유가 있습니다.</strong><br />
-          3가지 질문으로 1분 안에 찾아드립니다.
+        <p className="text-sm leading-relaxed mb-6 max-w-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
+          반복 실패엔 패턴이 있어요.<br />
+          <strong className="text-white">1분 진단으로 내 실패 원인을 찾고,</strong><br />
+          이번엔 다르게 시작하세요.
         </p>
+
+        {/* 혜택 체크리스트 */}
+        <div className="w-full max-w-sm mb-8 text-left space-y-2.5">
+          {[
+            "왜 반복 실패하는지 원인을 알게 돼요",
+            "내가 무너지는 요일·시간대가 보여요",
+            "의지 탓 그만, 데이터로 패턴을 파악해요",
+          ].map((text, i) => (
+            <div key={i} className="flex items-center gap-2.5">
+              <span
+                className="w-4 h-4 rounded-full flex items-center justify-center shrink-0 text-xs font-black"
+                style={{ background: "var(--amber)", color: "var(--navy)" }}
+              >✓</span>
+              <span className="text-xs font-semibold" style={{ color: "rgba(255,255,255,0.8)" }}>{text}</span>
+            </div>
+          ))}
+        </div>
 
         {/* Primary CTA */}
         <Link
@@ -60,7 +76,7 @@ export default function HomePage() {
           className="w-full max-w-sm py-4 rounded-2xl font-black text-base transition-transform hover:scale-[1.03] text-center block"
           style={{ background: "var(--amber)", color: "var(--navy)", boxShadow: "0 4px 20px rgba(212,168,83,0.4)" }}
         >
-          지금 바로 진단하기 →
+          내 실패 원인 1분 진단하기 →
         </Link>
         <p className="text-xs mt-2" style={{ color: "rgba(255,255,255,0.35)" }}>
           무료 · 1분 이내 · 즉시 결과
@@ -68,15 +84,15 @@ export default function HomePage() {
 
         {/* Secondary CTA */}
         <Link
-          href="/binge-program"
-          onClick={() => void trackEvent({ eventName: "hero_7day_cta_click" })}
+          href="/checkin"
+          onClick={() => void trackEvent({ eventName: "hero_checkin_cta_click" })}
           className="w-full max-w-sm py-3.5 rounded-2xl font-bold text-sm transition-transform hover:scale-[1.02] text-center block mt-3"
           style={{ background: "rgba(255,255,255,0.08)", color: "rgba(255,255,255,0.65)", border: "1.5px solid rgba(255,255,255,0.15)" }}
         >
-          7일 폭식 기록 시작하기
+          오늘 폭식 충동 기록하기
         </Link>
         <p className="text-xs mt-2" style={{ color: "rgba(255,255,255,0.25)" }}>
-          매일 2분 기록하면 내 폭식 패턴이 보여요.
+          하루 5초 기록 → 7일 후 나만의 패턴 리포트
         </p>
 
         <div
@@ -85,20 +101,21 @@ export default function HomePage() {
         />
       </section>
 
-      {/* ── 공감 섹션 ── */}
+      {/* ── 혜택 섹션 ── */}
       <section className="px-5 pt-10 pb-12 max-w-md mx-auto">
         <p className="text-xs font-black tracking-widest text-center mb-2" style={{ color: "var(--amber)" }}>
-          COMMON STRUGGLES
+          WHAT YOU GET
         </p>
-        <h2 className="text-lg font-black text-center mb-8" style={{ color: "var(--navy)" }}>
-          혹시 이런 경험 있으신가요?
+        <h2 className="text-lg font-black text-center mb-2" style={{ color: "var(--navy)" }}>
+          이걸 알게 되면 달라져요
         </h2>
+        <p className="text-xs text-center text-gray-400 mb-8">진단 + 매일 체크인으로 얻는 변화</p>
 
         <div className="grid grid-cols-2 gap-3">
-          {EMPATHY_CARDS.map((card, i) => (
+          {BENEFIT_CARDS.map((card, i) => (
             <div
               key={i}
-              className={`rounded-2xl p-4 flex flex-col gap-2${i === 4 ? " col-span-2" : ""}`}
+              className="rounded-2xl p-4 flex flex-col gap-2"
               style={{
                 background: "white",
                 boxShadow: "0 2px 12px rgba(0,0,0,0.05)",
@@ -106,9 +123,8 @@ export default function HomePage() {
               }}
             >
               <span className="text-2xl">{card.emoji}</span>
-              <p className="text-sm font-semibold leading-snug" style={{ color: "var(--navy)" }}>
-                &ldquo;{card.text}&rdquo;
-              </p>
+              <p className="text-xs font-black" style={{ color: "var(--amber)" }}>{card.title}</p>
+              <p className="text-xs leading-snug" style={{ color: "var(--navy)" }}>{card.text}</p>
             </div>
           ))}
         </div>
