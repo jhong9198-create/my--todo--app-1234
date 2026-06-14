@@ -252,25 +252,258 @@ function KakaoOpenChatGate({ failureType, resultLabel, onUnlock }: {
   );
 }
 
-// ── 신규 수익화 CTA ──────────────────────────────────────────────
-const NEW_CTAS = [
-  { label: "내 폭식 위험도 분석 보기", eventName: "binge_risk_cta_clicked", icon: "🔥", primary: true },
-  { label: "7일 후 재발 가능성 보기", eventName: "relapse_7day_cta_click", icon: "📅", primary: false },
-  { label: "심층 리포트 오픈 시 알림받기", eventName: "deep_report_notify_clicked", icon: "🔔", primary: false },
-  { label: "베타테스터 신청하기", eventName: "beta_tester_clicked", icon: "⭐", primary: false },
-];
+// ── 무료 리포트 콘텐츠 데이터 ────────────────────────────────────
+type ReportType = "relapse_risk" | "binge_risk" | "deep_report";
 
-function NewCTASection({ resultType }: { resultType: string }) {
-  const [toast, setToast] = useState(false);
+const REPORT_META: Record<ReportType, { icon: string; label: string; eventName: string }> = {
+  binge_risk:   { icon: "🔥", label: "내 폭식 위험도 분석 보기",  eventName: "binge_risk_cta_clicked" },
+  relapse_risk: { icon: "📅", label: "7일 후 재발 가능성 보기",   eventName: "relapse_7day_cta_click" },
+  deep_report:  { icon: "📋", label: "심층 리포트 보기",           eventName: "deep_report_notify_clicked" },
+};
 
-  function handleClick(eventName: string) {
-    void trackEvent({
-      eventName,
-      resultType,
-      userAgent: typeof navigator !== "undefined" ? navigator.userAgent : undefined,
+const RELAPSE_DATA: Record<FailureType, { level: string; pct: number; color: string; mainRisk: string; warnings: string[]; prevention: string }> = {
+  night_eating:      { level: "높음",     pct: 82, color: "#E05252", mainRisk: "수면 전 야식 루틴이 몸에 각인되어 있습니다. 환경이 바뀌지 않으면 같은 시간에 배고픔이 자동으로 찾아옵니다.", warnings: ["밤 10시 이후 TV·유튜브를 켜는 순간", "스트레스로 잠이 오지 않는 날 밤", "다이어트 시작 후 첫 주말"], prevention: "야식 시간에 '먹는 것' 말고 '하는 것' 대체 루틴을 1가지만 정하세요. (양치, 따뜻한 물, 스트레칭)" },
+  stress_binge:      { level: "매우 높음", pct: 88, color: "#C0392B", mainRisk: "스트레스가 올라오면 음식으로 해소하는 패턴이 자동화되어 있습니다. 스트레스 원인이 해결되지 않으면 반드시 재발합니다.", warnings: ["직장 스트레스가 최고조인 날", "혼자 있는 저녁 시간", "억울하거나 화가 나는 상황"], prevention: "충동이 오면 10분 타이머를 재세요. '지금 나 스트레스받고 있다'고 인식하는 것부터 시작하면 됩니다." },
+  three_day_quit:    { level: "높음",     pct: 74, color: "#E05252", mainRisk: "처음 의욕이 넘치다가 3~7일 후 작은 실수 하나에 전체를 포기하는 패턴이 반복됩니다.", warnings: ["다이어트 시작 후 첫 번째 치팅", "계획한 운동을 하루 빠진 날", "주변 사람들이 먹는 걸 보는 날"], prevention: "완벽한 하루보다 '나쁘지 않은 한 주'를 목표로 바꾸세요. 실수 한 번이 전체 포기가 아닙니다." },
+  plateau_despair:   { level: "중간",     pct: 68, color: "#E67E22", mainRisk: "2~3주 잘 되다가 체중이 멈추는 순간 의욕을 잃습니다. 정체기 대응 전략 없으면 그 지점에서 반드시 무너집니다.", warnings: ["2주 이상 체중계 숫자가 안 바뀌는 날", "열심히 했는데 결과가 없다는 느낌", "주변에 빨리 빠지는 사람을 볼 때"], prevention: "정체기는 실패가 아닙니다. 3주 이상 버티는 사람이 최종 성공합니다. 체중 측정을 주 1회로 줄이세요." },
+  social_collapse:   { level: "높음",     pct: 71, color: "#E05252", mainRisk: "술자리·회식 환경이 바뀌지 않으면 사회적 압력에 의한 재발이 반복됩니다. '한 번만'이 계속 반복됩니다.", warnings: ["예상 못 한 회식이 잡히는 날", "거절했을 때 눈치가 보이는 상황", "술과 함께 고칼로리 안주가 나오는 순간"], prevention: "완전 절제 대신 '이 자리에서 지킬 수 있는 최소 1가지'를 미리 정하고 참석하세요." },
+  exercise_avoidance:{ level: "보통",     pct: 62, color: "#E67E22", mainRisk: "식단만으로 체중을 조절하면 근육량이 줄면서 대사량이 낮아지고, 이후 정상 식사만 해도 살이 찌는 요요가 옵니다.", warnings: ["식단 제한이 너무 타이트해져 스트레스받을 때", "체중은 빠졌지만 몸이 더 쉽게 피곤할 때", "다이어트 끝나고 원래 식사량으로 돌아가는 시점"], prevention: "운동은 칼로리 소모보다 근육 유지가 목적입니다. 걷기 30분부터 시작해도 충분합니다." },
+};
+
+const BINGE_DATA: Record<FailureType, { score: number; label: string; color: string; description: string; triggers: string[]; tip: string }> = {
+  stress_binge:      { score: 9, label: "매우 위험", color: "#C0392B", description: "감정 자극에 즉각 음식으로 반응하는 패턴이 강하게 형성되어 있습니다. 스트레스·불안·외로움이 올라오는 즉시 폭식 충동이 발생합니다.", triggers: ["직장 스트레스", "혼자 있는 저녁", "누군가와의 갈등"], tip: "식욕이 아닌 감정 신호임을 인식하는 것이 핵심입니다. 충동이 오면 10분 기다려보세요." },
+  night_eating:      { score: 7, label: "위험",     color: "#E05252", description: "밤 10시~새벽 2시에 자동으로 식욕이 폭발합니다. 배가 고프지 않아도 그 시간만 되면 먹고 싶어지는 패턴입니다.", triggers: ["밤 10시 이후", "TV·유튜브 시청 중", "잠들기 어려운 날 밤"], tip: "야식 시간대에 다른 루틴(산책, 양치, 따뜻한 물 마시기)을 끼워 넣으세요." },
+  social_collapse:   { score: 7, label: "위험",     color: "#E05252", description: "혼자서는 잘 참다가 회식·술자리 환경에 놓이면 통제가 어려워집니다. 외부 환경이 강한 트리거가 됩니다.", triggers: ["술자리·회식", "타인이 먹는 모습", "거절하기 어려운 상황"], tip: "사전에 '이것만은 참겠다'는 기준 1개를 미리 정하고 자리에 참석하세요." },
+  plateau_despair:   { score: 5, label: "주의",     color: "#E67E22", description: "평소엔 잘 참지만 노력이 보상받지 못한다는 느낌이 들면 통제가 풀리는 패턴입니다.", triggers: ["체중 정체 후 며칠째", "열심히 했는데 결과가 없는 느낌", "주변 비교"], tip: "정체기는 패턴이 맞다는 신호입니다. 숫자 대신 다른 변화(체력, 몸 변화)에 집중하세요." },
+  three_day_quit:    { score: 5, label: "주의",     color: "#E67E22", description: "'에라 모르겠다'식의 포기성 폭식이 나타납니다. 작은 실수가 전체 포기로 이어지는 순간 폭식이 발생합니다.", triggers: ["계획 실패 직후", "첫 치팅 이후", "'어차피 망했다'는 생각"], tip: "실수는 폭식의 신호가 아닙니다. '오늘 하나 틀렸다'와 '다이어트 전체 실패'는 다릅니다." },
+  exercise_avoidance:{ score: 4, label: "양호",     color: "#27AE60", description: "직접적인 폭식보다 식단 제한이 너무 타이트해졌을 때의 반동 위험이 있습니다.", triggers: ["너무 엄격한 식단 유지 중", "운동 없이 굶기만 하는 날", "체중 정체로 더 줄이려 할 때"], tip: "굶는 식단보다 단백질 섭취로 포만감을 유지하는 것이 폭식 예방에 효과적입니다." },
+};
+
+const DEEP_DATA: Record<FailureType, { rootCause: string; triggerAnalysis: { trigger: string; description: string }[]; environmentChange: string; weekPlan: string[] }> = {
+  night_eating:      { rootCause: "야식 행동이 수면 루틴에 결합되어 있습니다. 몸이 '밤 → 먹기'를 자동 연결해 배가 고프지 않아도 식욕이 생깁니다.", triggerAnalysis: [{ trigger: "시간 트리거", description: "밤 10시가 넘으면 자동으로 냉장고로 향하는 패턴" }, { trigger: "미디어 트리거", description: "TV·유튜브 시청이 야식 욕구를 강화하는 습관적 연결" }, { trigger: "지루함 트리거", description: "밤에 할 일이 없을 때 음식이 유일한 자극이 되는 상황" }], environmentChange: "밤 9시 이후 주방 접근을 물리적으로 차단하거나, 야식 대신 할 '대체 루틴' 1가지를 정해두세요.", weekPlan: ["1-2일차: 밤 9시에 양치하기 (심리적 마감 신호)", "3-4일차: 야식 욕구 느낄 때 따뜻한 물 한 잔 마시기", "5-7일차: 밤 루틴 (스트레칭 10분 + 독서) 정착시키기"] },
+  stress_binge:      { rootCause: "스트레스 → 음식 해소 회로가 자동화되어 있습니다. 도파민이 음식에 연결되어 있어 부정적 감정이 오면 즉각 먹고 싶어집니다.", triggerAnalysis: [{ trigger: "감정 트리거", description: "불안·분노·외로움이 올라올 때 음식으로 달래려는 즉각 반응" }, { trigger: "직장 트리거", description: "업무 스트레스 피크인 날 퇴근 후 보상 심리 폭식" }, { trigger: "고독 트리거", description: "혼자 있는 저녁, 감정을 나눌 곳이 없을 때 음식이 위안" }], environmentChange: "스트레스 해소 방법 목록을 3가지 미리 만들어두세요. 음식이 아닌 것으로 (산책, 음악, 통화 등)", weekPlan: ["1-2일차: 폭식 전 '지금 나 스트레스받고 있다'고 인식하기", "3-4일차: 충동이 오면 10분 타이머 재기", "5-7일차: 스트레스 해소 대체 행동 1가지 실행해보기"] },
+  three_day_quit:    { rootCause: "완벽주의적 다이어트 패턴입니다. 계획이 조금이라도 어긋나면 전체를 포기하는 '0 아니면 100' 사고방식이 반복을 만들고 있습니다.", triggerAnalysis: [{ trigger: "완벽주의 트리거", description: "계획한 식단에서 조금만 벗어나도 '망했다'고 판단" }, { trigger: "첫 실수 트리거", description: "첫 번째 치팅 후 자포자기 폭식" }, { trigger: "비교 트리거", description: "다른 사람 결과와 비교해 의욕 상실 → 포기" }], environmentChange: "주간 단위로 계획하세요. '주간 80%' 목표로 바꾸면 하루 실수가 일주일을 망치지 않습니다.", weekPlan: ["1-2일차: 오늘 목표를 '완벽'이 아닌 '70%'로 낮추기", "3-4일차: 실수했을 때 '오늘 하나 틀렸다'고만 메모하기", "5-7일차: 포기하고 싶은 순간 24시간 유예하기"] },
+  plateau_despair:   { rootCause: "초기 성공에 익숙해진 몸이 더 이상 쉽게 반응하지 않는 정체기에서 심리적 무너짐이 시작됩니다. 숫자에 지나치게 의존하는 것이 문제입니다.", triggerAnalysis: [{ trigger: "숫자 집착 트리거", description: "매일 체중계에 올라가 조금이라도 안 빠지면 좌절" }, { trigger: "기대 불일치 트리거", description: "열심히 했는데 결과가 없다는 느낌이 의욕을 꺾음" }, { trigger: "비교 트리거", description: "빠르게 빠지는 다른 사람을 보며 내 방법이 틀렸다고 판단" }], environmentChange: "체중 측정 주기를 매일 → 주 1회로 바꾸세요. 숫자 대신 '이번 주 내가 지킨 것'을 기록하세요.", weekPlan: ["1-2일차: 체중계 측정 빈도 줄이기 (매일 → 격일 → 주 1회)", "3-4일차: 체중 외 변화 기록하기 (허리, 컨디션, 지구력)", "5-7일차: 정체기 3주 버티기 도전 (지나면 반드시 빠짐)"] },
+  social_collapse:   { rootCause: "사회적 상황에서의 거절 능력과 자기 조절 전략이 없습니다. 외부 환경이 바뀌지 않으면 같은 상황이 올 때마다 무너집니다.", triggerAnalysis: [{ trigger: "회식 트리거", description: "예상치 못한 회식에서 분위기에 휩쓸려 절제 포기" }, { trigger: "눈치 트리거", description: "거절했을 때 이상하게 볼까봐 맞춰주다 과식" }, { trigger: "알코올 트리거", description: "술 한 잔 후 판단력 저하로 안주 통제 불가" }], environmentChange: "회식 전 '이것만 지킨다' 규칙 1개를 미리 정하세요. (예: 술은 2잔까지, 안주는 단백질 위주)", weekPlan: ["1-2일차: 다음 회식 전 나만의 규칙 1개 정하기", "3-4일차: 술자리에서 물·음료 섞어 마시는 전략 써보기", "5-7일차: 회식 후 다음 날 식사로 균형 잡기 (자책 금지)"] },
+  exercise_avoidance:{ rootCause: "운동 없이 식단만으로 유지하려 합니다. 단기적으론 효과가 있지만, 근육량 감소 → 대사 저하 → 요요의 악순환이 반복됩니다.", triggerAnalysis: [{ trigger: "귀찮음 트리거", description: "운동 시작의 심리적 장벽이 높아 계속 미루게 됨" }, { trigger: "극단적 식단 트리거", description: "운동 안 하는 대신 식단을 너무 타이트하게 → 반동 폭식" }, { trigger: "근손실 트리거", description: "굶기로 살을 빼면 지방보다 근육이 먼저 빠져 요요 위험" }], environmentChange: "운동을 '살 빼는 것'이 아닌 '근육 유지'로 목적을 바꾸세요. 30분 걷기부터 충분합니다.", weekPlan: ["1-2일차: 매일 10~15분 걷기부터 시작", "3-4일차: 식단에 단백질 1가지씩 추가하기 (근손실 방지)", "5-7일차: 계단 오르기·스트레칭 등 일상 활동 늘리기"] },
+};
+
+// ── 무료 리포트 UI 컴포넌트 ──────────────────────────────────────
+function RelapseRiskReport({ failureType }: { failureType: FailureType }) {
+  const d = RELAPSE_DATA[failureType];
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ border: `2px solid ${d.color}20` }}>
+      <div className="px-5 py-4" style={{ background: d.color }}>
+        <p className="text-xs font-black tracking-widest text-white opacity-80 mb-1">재발 가능성 분석</p>
+        <div className="flex items-end gap-2">
+          <span className="text-4xl font-black text-white">{d.pct}%</span>
+          <span className="text-sm font-black text-white opacity-90 mb-1">{d.level}</span>
+        </div>
+        <div className="mt-2 rounded-full overflow-hidden" style={{ background: "rgba(255,255,255,0.25)", height: 6 }}>
+          <div className="h-full rounded-full" style={{ width: `${d.pct}%`, background: "white" }} />
+        </div>
+      </div>
+      <div className="bg-white px-5 py-4 space-y-4">
+        <div>
+          <p className="text-xs font-black mb-1.5" style={{ color: d.color }}>왜 재발하나요?</p>
+          <p className="text-sm leading-relaxed" style={{ color: "var(--navy)" }}>{d.mainRisk}</p>
+        </div>
+        <div>
+          <p className="text-xs font-black mb-2" style={{ color: "var(--navy)" }}>⚠ 이 순간 특히 조심하세요</p>
+          <div className="space-y-1.5">
+            {d.warnings.map((w, i) => (
+              <div key={i} className="flex items-start gap-2">
+                <span className="text-xs font-black w-4 shrink-0" style={{ color: d.color }}>•</span>
+                <span className="text-xs leading-snug text-gray-600">{w}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-xl p-4" style={{ background: "rgba(30,58,95,0.04)", border: "1px solid rgba(30,58,95,0.08)" }}>
+          <p className="text-xs font-black mb-1.5" style={{ color: "var(--navy)" }}>💡 지금 당장 할 수 있는 예방법</p>
+          <p className="text-xs leading-relaxed text-gray-600">{d.prevention}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BingeRiskReport({ failureType }: { failureType: FailureType }) {
+  const d = BINGE_DATA[failureType];
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ border: "2px solid rgba(30,58,95,0.1)" }}>
+      <div className="px-5 py-4" style={{ background: "var(--navy)" }}>
+        <p className="text-xs font-black tracking-widest mb-2" style={{ color: "var(--amber)" }}>폭식 위험도</p>
+        <div className="flex items-center gap-3">
+          <div className="flex gap-1">
+            {Array.from({ length: 10 }).map((_, i) => (
+              <div key={i} className="w-5 h-5 rounded-sm" style={{ background: i < d.score ? d.color : "rgba(255,255,255,0.15)" }} />
+            ))}
+          </div>
+        </div>
+        <div className="flex items-end gap-2 mt-2">
+          <span className="text-3xl font-black text-white">{d.score}<span className="text-lg">/10</span></span>
+          <span className="text-sm font-black mb-1" style={{ color: d.color }}>{d.label}</span>
+        </div>
+      </div>
+      <div className="bg-white px-5 py-4 space-y-4">
+        <p className="text-sm leading-relaxed" style={{ color: "var(--navy)" }}>{d.description}</p>
+        <div>
+          <p className="text-xs font-black mb-2" style={{ color: "var(--navy)" }}>주요 폭식 트리거</p>
+          <div className="flex flex-wrap gap-2">
+            {d.triggers.map((t, i) => (
+              <span key={i} className="px-3 py-1.5 rounded-full text-xs font-bold" style={{ background: "var(--beige)", color: "var(--navy)" }}>{t}</span>
+            ))}
+          </div>
+        </div>
+        <div className="rounded-xl p-4" style={{ background: "rgba(30,58,95,0.04)", border: "1px solid rgba(30,58,95,0.08)" }}>
+          <p className="text-xs font-black mb-1.5" style={{ color: "var(--navy)" }}>💡 핵심 대처법</p>
+          <p className="text-xs leading-relaxed text-gray-600">{d.tip}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DeepReportContent({ failureType }: { failureType: FailureType }) {
+  const d = DEEP_DATA[failureType];
+  return (
+    <div className="space-y-3">
+      <div className="rounded-2xl bg-white p-5" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+        <p className="text-xs font-black tracking-widest mb-3" style={{ color: "var(--amber)" }}>핵심 원인 분석</p>
+        <p className="text-sm leading-relaxed" style={{ color: "var(--navy)" }}>{d.rootCause}</p>
+      </div>
+      <div className="rounded-2xl bg-white p-5" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+        <p className="text-xs font-black tracking-widest mb-3" style={{ color: "var(--amber)" }}>트리거 심층 분석</p>
+        <div className="space-y-3">
+          {d.triggerAnalysis.map(({ trigger, description }, i) => (
+            <div key={i} className="flex gap-3">
+              <span className="text-xs font-black px-2.5 py-1 rounded-full shrink-0 h-fit" style={{ background: "rgba(212,168,83,0.15)", color: "var(--amber)" }}>{trigger}</span>
+              <p className="text-xs leading-relaxed text-gray-500 pt-1">{description}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div className="rounded-2xl p-5" style={{ background: "var(--navy)" }}>
+        <p className="text-xs font-black tracking-widest mb-2" style={{ color: "var(--amber)" }}>지금 바꿔야 할 환경</p>
+        <p className="text-sm leading-relaxed text-white">{d.environmentChange}</p>
+      </div>
+      <div className="rounded-2xl bg-white p-5" style={{ boxShadow: "0 2px 12px rgba(0,0,0,0.06)" }}>
+        <p className="text-xs font-black tracking-widest mb-3" style={{ color: "var(--amber)" }}>이번 주 실천 계획</p>
+        <div className="space-y-2.5">
+          {d.weekPlan.map((step, i) => (
+            <div key={i} className="flex items-start gap-2.5">
+              <span className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-black shrink-0 mt-0.5" style={{ background: "var(--amber)", color: "var(--navy)" }}>{i + 1}</span>
+              <p className="text-xs leading-snug text-gray-600">{step}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── 연락처 수집 모달 ──────────────────────────────────────────────
+function LeadCaptureModal({ reportType, failureType, onSubmit, onClose }: {
+  reportType: ReportType;
+  failureType: FailureType;
+  onSubmit: () => void;
+  onClose: () => void;
+}) {
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+  const [kakaoId, setKakaoId] = useState("");
+  const [consent, setConsent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState("");
+
+  const LABELS: Record<ReportType, string> = {
+    relapse_risk: "재발 가능성 분석",
+    binge_risk: "폭식 위험도 분석",
+    deep_report: "심층 리포트",
+  };
+
+  async function handleSubmit() {
+    if (!name.trim()) { setError("이름을 입력해주세요"); return; }
+    if (!phone.trim() && !kakaoId.trim()) { setError("전화번호 또는 카카오ID 중 하나를 입력해주세요"); return; }
+    if (!consent) { setError("개인정보 수집 동의가 필요합니다"); return; }
+    setError("");
+    setSubmitting(true);
+    await trackEvent({
+      eventName: "free_report_lead_captured",
+      resultType: FAILURE_TYPE_INFO[failureType].label,
+      interest: reportType,
+      name: name.trim(),
+      phone: phone.trim() || undefined,
+      kakaoId: kakaoId.trim() || undefined,
     });
-    setToast(true);
-    setTimeout(() => setToast(false), 4000);
+    localStorage.setItem("wg_free_report_lead_done", "1");
+    setSubmitting(false);
+    onSubmit();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-end justify-center" style={{ background: "rgba(0,0,0,0.6)" }} onClick={onClose}>
+      <div className="w-full max-w-md rounded-t-3xl p-6 pb-10" style={{ background: "white" }} onClick={e => e.stopPropagation()}>
+        <div className="w-10 h-1 rounded-full mx-auto mb-5" style={{ background: "rgba(0,0,0,0.15)" }} />
+        <p className="text-xs font-black tracking-widest mb-1" style={{ color: "var(--amber)" }}>1개월 무료 제공</p>
+        <p className="font-black text-lg mb-0.5" style={{ color: "var(--navy)" }}>연락처를 남기면 바로 공개돼요</p>
+        <p className="text-xs text-gray-400 mb-5">{LABELS[reportType]} · 광고 없음</p>
+
+        <div className="space-y-2.5 mb-4">
+          <input value={name} onChange={e => setName(e.target.value)} placeholder="이름 (필수)" className="w-full px-4 py-3 rounded-xl text-sm" style={{ border: "1.5px solid rgba(30,58,95,0.15)", outline: "none", fontFamily: "inherit" }} />
+          <input value={phone} onChange={e => setPhone(e.target.value)} placeholder="전화번호 (선택)" type="tel" className="w-full px-4 py-3 rounded-xl text-sm" style={{ border: "1.5px solid rgba(30,58,95,0.15)", outline: "none", fontFamily: "inherit" }} />
+          <input value={kakaoId} onChange={e => setKakaoId(e.target.value)} placeholder="카카오톡 ID (선택)" className="w-full px-4 py-3 rounded-xl text-sm" style={{ border: "1.5px solid rgba(30,58,95,0.15)", outline: "none", fontFamily: "inherit" }} />
+          <p className="text-xs text-gray-400 pl-1">※ 전화번호·카카오ID 중 하나는 필요해요</p>
+        </div>
+
+        <label className="flex items-start gap-2.5 mb-4 cursor-pointer">
+          <input type="checkbox" checked={consent} onChange={e => setConsent(e.target.checked)} className="mt-0.5 w-4 h-4 shrink-0" />
+          <span className="text-xs text-gray-500 leading-relaxed">
+            개인정보(이름·연락처) 수집 및 이용에 동의합니다.
+            수집 목적: 무료 리포트 제공. 보유 기간: 서비스 종료 시까지.{" "}
+            <span style={{ color: "var(--amber)" }}>삭제 요청: jhong9198@gmail.com</span>
+          </span>
+        </label>
+
+        {error && <p className="text-xs text-red-500 mb-3">{error}</p>}
+
+        <button onClick={handleSubmit} disabled={submitting} className="w-full py-4 rounded-2xl font-black text-base" style={{ background: "var(--amber)", color: "var(--navy)" }}>
+          {submitting ? "저장 중..." : "무료로 분석 결과 보기 →"}
+        </button>
+        <button onClick={onClose} className="w-full py-3 text-xs text-center" style={{ color: "rgba(0,0,0,0.3)" }}>닫기</button>
+      </div>
+    </div>
+  );
+}
+
+// ── 무료 리포트 섹션 (NewCTASection 대체) ────────────────────────
+function FreeReportSection({ failureType }: { failureType: FailureType }) {
+  const [leadDone, setLeadDone] = useState(false);
+  const [activeReport, setActiveReport] = useState<ReportType | null>(null);
+  const [pendingReport, setPendingReport] = useState<ReportType | null>(null);
+  const [showModal, setShowModal] = useState(false);
+
+  useEffect(() => {
+    setLeadDone(localStorage.getItem("wg_free_report_lead_done") === "1");
+  }, []);
+
+  function handleClick(key: ReportType) {
+    void trackEvent({ eventName: REPORT_META[key].eventName, resultType: FAILURE_TYPE_INFO[failureType].label });
+    if (activeReport === key) { setActiveReport(null); return; }
+    if (leadDone) {
+      setActiveReport(key);
+    } else {
+      setPendingReport(key);
+      setShowModal(true);
+    }
+  }
+
+  function handleLeadSubmit() {
+    setLeadDone(true);
+    setShowModal(false);
+    if (pendingReport) setActiveReport(pendingReport);
+    setPendingReport(null);
   }
 
   return (
@@ -279,41 +512,42 @@ function NewCTASection({ resultType }: { resultType: string }) {
         <div className="px-5 py-4" style={{ background: "var(--navy)" }}>
           <p className="font-black text-white text-sm">더 깊이 알고 싶으신가요?</p>
           <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.45)" }}>
-            지금 패턴을 알아야 다음엔 달라질 수 있습니다
+            연락처 남기면 3가지 분석을 1개월간 무료로 드려요
           </p>
         </div>
         <div className="bg-white px-5 py-4 space-y-2.5">
-          {NEW_CTAS.map(({ label, eventName, icon, primary }) => (
+          {(Object.entries(REPORT_META) as [ReportType, typeof REPORT_META[ReportType]][]).map(([key, meta], idx) => (
             <button
-              key={eventName}
-              onClick={() => handleClick(eventName)}
-              data-event={eventName}
+              key={key}
+              onClick={() => handleClick(key)}
               className="w-full py-3.5 rounded-xl font-bold text-sm text-left px-4 transition-all hover:scale-[1.01] flex items-center gap-2.5"
               style={
-                primary
+                activeReport === key
+                  ? { background: "var(--navy)", color: "var(--amber)" }
+                  : idx === 0
                   ? { background: "var(--amber)", color: "var(--navy)" }
                   : { background: "rgba(30,58,95,0.05)", color: "var(--navy)", border: "1.5px solid rgba(30,58,95,0.1)" }
               }
             >
-              <span className="text-base">{icon}</span>
-              <span className="flex-1">{label}</span>
-              <span className="text-xs opacity-40">→</span>
+              <span className="text-base">{meta.icon}</span>
+              <span className="flex-1">{meta.label}</span>
+              <span className="text-xs opacity-50">{activeReport === key ? "▲" : "→"}</span>
             </button>
           ))}
         </div>
       </div>
 
-      {toast && (
-        <div
-          className="fixed bottom-6 left-1/2 z-50 w-[88vw] max-w-sm rounded-2xl px-5 py-4"
-          style={{ transform: "translateX(-50%)", background: "var(--navy)", boxShadow: "0 8px 32px rgba(0,0,0,0.3)" }}
-        >
-          <p className="text-white text-sm font-black mb-1">준비 중입니다 🛠️</p>
-          <p className="text-xs leading-relaxed" style={{ color: "rgba(255,255,255,0.65)" }}>
-            현재 심층 분석 기능을 준비 중입니다.<br />
-            알림 신청을 남기면 오픈 시 가장 먼저 안내드릴게요.
-          </p>
-        </div>
+      {activeReport === "binge_risk"   && <BingeRiskReport failureType={failureType} />}
+      {activeReport === "relapse_risk" && <RelapseRiskReport failureType={failureType} />}
+      {activeReport === "deep_report"  && <DeepReportContent failureType={failureType} />}
+
+      {showModal && pendingReport && (
+        <LeadCaptureModal
+          reportType={pendingReport}
+          failureType={failureType}
+          onSubmit={handleLeadSubmit}
+          onClose={() => { setShowModal(false); setPendingReport(null); }}
+        />
       )}
     </>
   );
@@ -429,7 +663,7 @@ export default function ResultPage() {
         {isUnlocked && (
           <>
             <PreviewSection failureType={failureType} />
-            <NewCTASection resultType={info.label} />
+            <FreeReportSection failureType={failureType} />
             <ShareSection info={info} />
             <AccuracyFeedback resultType={info.label} />
 
