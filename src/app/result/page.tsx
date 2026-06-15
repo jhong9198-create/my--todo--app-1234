@@ -477,33 +477,13 @@ function LeadCaptureModal({ reportType, failureType, onSubmit, onClose }: {
   );
 }
 
-// ── 무료 리포트 섹션 (NewCTASection 대체) ────────────────────────
+// ── 무료 리포트 섹션 ─────────────────────────────────────────────
 function FreeReportSection({ failureType }: { failureType: FailureType }) {
-  const [leadDone, setLeadDone] = useState(false);
   const [activeReport, setActiveReport] = useState<ReportType | null>(null);
-  const [pendingReport, setPendingReport] = useState<ReportType | null>(null);
-  const [showModal, setShowModal] = useState(false);
-
-  useEffect(() => {
-    setLeadDone(localStorage.getItem("wg_free_report_lead_done") === "1");
-  }, []);
 
   function handleClick(key: ReportType) {
     void trackEvent({ eventName: REPORT_META[key].eventName, resultType: FAILURE_TYPE_INFO[failureType].label });
-    if (activeReport === key) { setActiveReport(null); return; }
-    if (leadDone) {
-      setActiveReport(key);
-    } else {
-      setPendingReport(key);
-      setShowModal(true);
-    }
-  }
-
-  function handleLeadSubmit() {
-    setLeadDone(true);
-    setShowModal(false);
-    if (pendingReport) setActiveReport(pendingReport);
-    setPendingReport(null);
+    setActiveReport(prev => prev === key ? null : key);
   }
 
   return (
@@ -512,7 +492,7 @@ function FreeReportSection({ failureType }: { failureType: FailureType }) {
         <div className="px-5 py-4" style={{ background: "var(--navy)" }}>
           <p className="font-black text-white text-sm">더 깊이 알고 싶으신가요?</p>
           <p className="text-xs mt-1" style={{ color: "rgba(255,255,255,0.45)" }}>
-            연락처 남기면 3가지 분석을 1개월간 무료로 드려요
+            무료로 더 자세한 분석을 볼 수 있어요
           </p>
         </div>
         <div className="bg-white px-5 py-4 space-y-2.5">
@@ -540,15 +520,6 @@ function FreeReportSection({ failureType }: { failureType: FailureType }) {
       {activeReport === "binge_risk"   && <BingeRiskReport failureType={failureType} />}
       {activeReport === "relapse_risk" && <RelapseRiskReport failureType={failureType} />}
       {activeReport === "deep_report"  && <DeepReportContent failureType={failureType} />}
-
-      {showModal && pendingReport && (
-        <LeadCaptureModal
-          reportType={pendingReport}
-          failureType={failureType}
-          onSubmit={handleLeadSubmit}
-          onClose={() => { setShowModal(false); setPendingReport(null); }}
-        />
-      )}
     </>
   );
 }
