@@ -37,10 +37,15 @@ async function sendToNotion(body: Record<string, unknown>) {
 }
 
 export async function POST(req: NextRequest) {
-  const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+  if (!supabaseUrl || !supabaseKey) {
+    console.error("[track/api] 환경변수 누락 — URL:", supabaseUrl, "KEY:", supabaseKey ? "있음" : "없음");
+    return NextResponse.json({ error: "env missing" }, { status: 500 });
+  }
+
+  const supabase = createClient(supabaseUrl, supabaseKey);
 
   let body: Record<string, unknown>;
   try {
@@ -49,7 +54,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const { error } = await supabase.from("wg_events").insert({
+  const { data, error } = await supabase.from("wg_events").insert({
     event_name: body.eventName,
     created_at: body.createdAt ?? new Date().toISOString(),
     session_id: body.sessionId ?? null,
@@ -69,11 +74,16 @@ export async function POST(req: NextRequest) {
     utm_source: body.utmSource ?? null,
     utm_campaign: body.utmCampaign ?? null,
     utm_medium: body.utmMedium ?? null,
-  });
+  }).select();
 
   if (error) {
-    console.error("[track/api] Supabase 오류:", error.message);
+    console.error("[track/api] Supabase insert 오류:", error.code, error.message, error.details);
     return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  if (!data || data.length === 0) {
+    console.error("[track/api] Supabase insert 무시됨 — RLS 또는 정책 문제. event:", body.eventName);
+    return NextResponse.json({ error: "insert silently ignored" }, { status: 500 });
   }
 
   // Notion은 fire-and-forget (실패해도 Supabase 저장은 유지)
