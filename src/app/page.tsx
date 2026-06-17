@@ -16,6 +16,16 @@ const BENEFIT_CARDS = [
 export default function HomePage() {
   useEffect(() => {
     void trackEvent({ eventName: "page_view_landing" });
+    const startTime = Date.now();
+
+    const handleUnload = () => {
+      const seconds = Math.round((Date.now() - startTime) / 1000);
+      const payload = JSON.stringify({ eventName: "page_exit_landing", interest: String(seconds) });
+      navigator.sendBeacon("/api/track", new Blob([payload], { type: "application/json" }));
+    };
+
+    window.addEventListener("beforeunload", handleUnload);
+    return () => window.removeEventListener("beforeunload", handleUnload);
   }, []);
 
   return (
