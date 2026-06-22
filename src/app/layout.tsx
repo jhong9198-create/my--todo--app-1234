@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { Analytics } from '@vercel/analytics/next';
 import "./globals.css";
 
 const geistSans = Geist({
@@ -30,6 +31,7 @@ export default function RootLayout({
           <p>다이어트 어디가? — 나에게 맞는 다이어트 업체 추천 서비스</p>
           <p>업체 정보는 참고용이며, 실제 상담 후 결정하시기 바랍니다</p>
         </footer>
+        <Analytics />
       </body>
     </html>
   );
