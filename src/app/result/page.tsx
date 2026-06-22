@@ -524,6 +524,139 @@ function FreeReportSection({ failureType }: { failureType: FailureType }) {
   );
 }
 
+// ── 7일 점수 추적 ─────────────────────────────────────────────────
+interface DiagnosisSnapshot {
+  date: string;
+  failureType: FailureType;
+  bingeScore: number;
+  relapseRisk: number;
+}
+
+function loadDiagnosisSnapshot(): DiagnosisSnapshot | null {
+  try {
+    const raw = localStorage.getItem("wg_diagnosis_snapshot");
+    return raw ? (JSON.parse(raw) as DiagnosisSnapshot) : null;
+  } catch { return null; }
+}
+
+function saveDiagnosisSnapshot(snap: DiagnosisSnapshot) {
+  localStorage.setItem("wg_diagnosis_snapshot", JSON.stringify(snap));
+}
+
+function daysSince(isoDate: string): number {
+  return Math.floor((Date.now() - new Date(isoDate).getTime()) / 86_400_000);
+}
+
+type ComparisonState =
+  | { kind: "first" }
+  | { kind: "waiting"; daysLeft: number }
+  | { kind: "ready"; prev: DiagnosisSnapshot };
+
+// ── 7일 비교 배너 ─────────────────────────────────────────────────
+function ScoreComparisonBanner({
+  prev,
+  curr,
+  onClose,
+}: {
+  prev: DiagnosisSnapshot;
+  curr: { failureType: FailureType; bingeScore: number; relapseRisk: number };
+  onClose: () => void;
+}) {
+  const bingeDelta = curr.bingeScore - prev.bingeScore;
+  const improved = bingeDelta <= 0;
+  const daysAgo = daysSince(prev.date);
+  const prevInfo = FAILURE_TYPE_INFO[prev.failureType];
+  const currInfo = FAILURE_TYPE_INFO[curr.failureType];
+  const accentColor = improved ? "#27AE60" : "#E05252";
+
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ border: `2px solid ${accentColor}`, boxShadow: "0 4px 24px rgba(0,0,0,0.12)" }}>
+      <div className="px-5 py-4" style={{ background: accentColor }}>
+        <p className="text-xs font-black tracking-widest text-white opacity-80 mb-1">
+          {daysAgo}일 전 결과와 비교
+        </p>
+        <p className="font-black text-white text-lg leading-snug">
+          {improved ? "점수가 개선됐어요! 🎉" : "위험도가 높아졌어요 ⚠️"}
+        </p>
+      </div>
+      <div className="bg-white px-5 py-5 space-y-4">
+        {prev.failureType !== curr.failureType && (
+          <div className="flex items-center gap-2 text-sm">
+            <span>{prevInfo.emoji} <span style={{ color: "var(--navy)" }}>{prevInfo.label}</span></span>
+            <span className="text-gray-400">→</span>
+            <span>{currInfo.emoji} <span style={{ color: accentColor }}>{currInfo.label}</span></span>
+          </div>
+        )}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="rounded-xl p-3 text-center" style={{ background: "var(--beige)" }}>
+            <p className="text-xs text-gray-400 mb-1">{daysAgo}일 전</p>
+            <p className="text-2xl font-black" style={{ color: "var(--navy)" }}>
+              {prev.bingeScore}<span className="text-sm font-semibold">/10</span>
+            </p>
+            <p className="text-xs text-gray-500 mt-0.5">폭식 위험도</p>
+          </div>
+          <div className="rounded-xl p-3 text-center" style={{ background: improved ? "rgba(39,174,96,0.1)" : "rgba(224,82,82,0.1)" }}>
+            <p className="text-xs text-gray-400 mb-1">지금</p>
+            <p className="text-2xl font-black" style={{ color: accentColor }}>
+              {curr.bingeScore}<span className="text-sm font-semibold">/10</span>
+            </p>
+            <p className="text-xs font-bold mt-0.5" style={{ color: accentColor }}>
+              {bingeDelta > 0 ? `+${bingeDelta}점 상승` : bingeDelta < 0 ? `${Math.abs(bingeDelta)}점 하락` : "변화 없음"}
+            </p>
+          </div>
+        </div>
+        <div className="rounded-xl p-4" style={{ background: "var(--navy)" }}>
+          <p className="text-xs font-black mb-1.5" style={{ color: "var(--amber)" }}>
+            {improved ? "이 흐름을 계속 유지하려면" : "지금 바로 개입이 필요해요"}
+          </p>
+          <p className="text-sm text-white leading-snug mb-3">
+            {improved
+              ? "7일마다 추적하면 어떤 습관이 효과 있는지 정확히 알 수 있어요."
+              : "위험도가 올라가고 있어요. 패턴을 추적하면 언제, 왜 올라가는지 보이기 시작합니다."}
+          </p>
+          <button
+            onClick={() => {
+              void trackEvent({ eventName: "score_comparison_subscribe_click" });
+              window.open(KAKAO_OPENCHAT_URL, "_blank");
+            }}
+            className="w-full py-3 rounded-xl font-black text-sm transition-all hover:scale-[1.02]"
+            style={{ background: "var(--amber)", color: "var(--navy)" }}
+          >
+            7일마다 변화 추적하기 →
+          </button>
+        </div>
+        <button onClick={onClose} className="w-full py-2 text-xs text-center text-gray-400">
+          닫기
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── 7일 후 재진단 유도 뱃지 ──────────────────────────────────────
+function SevenDayReminderBadge({ state }: { state: ComparisonState }) {
+  if (state.kind === "ready") return null;
+  const isFirst = state.kind === "first";
+  const daysLeft = state.kind === "waiting" ? state.daysLeft : 7;
+
+  return (
+    <div className="rounded-2xl p-5 flex items-center gap-4"
+      style={{ background: "rgba(212,168,83,0.1)", border: "1.5px solid rgba(212,168,83,0.35)" }}>
+      <span className="text-3xl shrink-0">📊</span>
+      <div>
+        <p className="font-black text-sm" style={{ color: "var(--navy)" }}>
+          {isFirst ? "오늘 결과가 저장됐어요" : `D-${daysLeft} · 비교 결과 준비 중`}
+        </p>
+        <p className="text-xs text-gray-500 mt-0.5">
+          {isFirst
+            ? "7일 뒤 다시 진단하면 점수 변화를 비교해 드려요"
+            : `${daysLeft}일 뒤 진단하면 지금 결과와 비교해 드려요`}
+        </p>
+      </div>
+    </div>
+  );
+}
+
 // ── 메인 페이지 ──────────────────────────────────────────────────
 const HELP_LABELS: Record<string, string> = {
   obesity_clinic: "비만클리닉", oriental: "한의원", pt: "PT",
@@ -536,6 +669,8 @@ export default function ResultPage() {
   const [failureType, setFailureType] = useState<FailureType | null>(null);
   const [answers, setAnswers] = useState<DiagnosisAnswers | null>(null);
   const [isUnlocked, setIsUnlocked] = useState(false);
+  const [comparisonState, setComparisonState] = useState<ComparisonState>({ kind: "first" });
+  const [showComparison, setShowComparison] = useState(false);
 
   useEffect(() => {
     const raw = localStorage.getItem("wg_diagnosis");
@@ -544,11 +679,31 @@ export default function ResultPage() {
     const type = getDiagnosisResult(parsed);
     const alreadyDone = localStorage.getItem("wg_direct_lead_done") === "1";
 
+    const prevSnapshot = loadDiagnosisSnapshot();
+    const currScore = BINGE_DATA[type].score;
+    const currRelapse = RELAPSE_DATA[type].pct;
+
     const timer = setTimeout(() => {
       setFailureType(type);
       setAnswers(parsed);
       setIsUnlocked(alreadyDone);
       setLoading(false);
+
+      if (prevSnapshot) {
+        const days = daysSince(prevSnapshot.date);
+        if (days >= 7) {
+          setComparisonState({ kind: "ready", prev: prevSnapshot });
+          setShowComparison(true);
+          saveDiagnosisSnapshot({ date: new Date().toISOString(), failureType: type, bingeScore: currScore, relapseRisk: currRelapse });
+          void trackEvent({ eventName: "score_comparison_viewed", resultType: FAILURE_TYPE_INFO[type].label });
+        } else {
+          setComparisonState({ kind: "waiting", daysLeft: 7 - days });
+        }
+      } else {
+        setComparisonState({ kind: "first" });
+        saveDiagnosisSnapshot({ date: new Date().toISOString(), failureType: type, bingeScore: currScore, relapseRisk: currRelapse });
+      }
+
       void trackEvent({
         eventName: "diagnosis_result_viewed",
         resultType: FAILURE_TYPE_INFO[type].label,
@@ -604,6 +759,18 @@ export default function ResultPage() {
       </div>
 
       <div className="max-w-md mx-auto px-4 -mt-10 space-y-4">
+
+        {/* 7일 비교 배너 — 재방문 7일 이상 경과 시 */}
+        {showComparison && comparisonState.kind === "ready" && failureType && (
+          <ScoreComparisonBanner
+            prev={comparisonState.prev}
+            curr={{ failureType, bingeScore: BINGE_DATA[failureType].score, relapseRisk: RELAPSE_DATA[failureType].pct }}
+            onClose={() => setShowComparison(false)}
+          />
+        )}
+
+        {/* 7일 후 재진단 유도 뱃지 */}
+        {!showComparison && <SevenDayReminderBadge state={comparisonState} />}
 
         {/* 스트레스 폭식형 훅 — 항상 표시 */}
         {failureType === "stress_binge" && <StressBingeHookSection />}
