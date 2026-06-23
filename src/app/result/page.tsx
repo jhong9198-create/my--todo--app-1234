@@ -693,7 +693,12 @@ function PaidReportCTA({ failureType }: { failureType: FailureType }) {
 
     const impCode = process.env.NEXT_PUBLIC_PORTONE_IMP_CODE ?? "";
     if (!impCode) {
-      alert("결제 설정이 완료되지 않았습니다. (IMP 코드 누락)");
+      console.error(
+        "[Payment] NEXT_PUBLIC_PORTONE_IMP_CODE 환경변수가 설정되지 않았습니다.\n" +
+        "  1. .env.local 에 NEXT_PUBLIC_PORTONE_IMP_CODE=impXXXXXXXX 추가\n" +
+        "  2. Vercel 대시보드 → Settings → Environment Variables 에도 동일하게 추가 후 재배포"
+      );
+      alert("결제창을 열 수 없습니다.\n잠시 후 다시 시도해주세요.");
       setLoading(false);
       return;
     }
