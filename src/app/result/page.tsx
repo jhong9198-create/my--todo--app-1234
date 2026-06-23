@@ -12,6 +12,21 @@ import {
 } from "@/lib/diagnosis";
 import { trackEvent } from "@/lib/tracking";
 
+// ── 포트원 v1 SDK 타입 ─────────────────────────────────────────────
+interface PortOneResponse {
+  success: boolean;
+  error_msg?: string;
+  imp_uid?: string;
+  merchant_uid?: string;
+  paid_amount?: number;
+}
+type ImpWindow = typeof window & {
+  IMP?: {
+    init: (impCode: string) => void;
+    request_pay: (params: Record<string, unknown>, callback: (rsp: PortOneResponse) => void) => void;
+  };
+};
+
 const SITE_URL = "https://my-todo-app-three-woad.vercel.app";
 const KAKAO_OPENCHAT_URL = "https://open.kakao.com/o/pJpkL2yi";
 
@@ -657,6 +672,141 @@ function SevenDayReminderBadge({ state }: { state: ComparisonState }) {
   );
 }
 
+// ── 유료 심층 리포트 CTA ──────────────────────────────────────────
+function PaidReportCTA({ failureType }: { failureType: FailureType }) {
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [alreadyPaid, setAlreadyPaid] = useState(false);
+  const info = FAILURE_TYPE_INFO[failureType];
+
+  useEffect(() => {
+    setAlreadyPaid(!!localStorage.getItem("wg_paid_report_unlocked"));
+  }, []);
+
+  async function handlePayment() {
+    void trackEvent({ eventName: "payment_cta_click", resultType: info.label });
+    setLoading(true);
+
+    const merchantUid = `wg-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    localStorage.setItem("wg_pending_merchant_uid", merchantUid);
+    localStorage.setItem("wg_pending_failure_type", failureType);
+
+    const impCode = process.env.NEXT_PUBLIC_PORTONE_IMP_CODE ?? "";
+    if (!impCode) {
+      alert("결제 설정이 완료되지 않았습니다. (IMP 코드 누락)");
+      setLoading(false);
+      return;
+    }
+
+    try {
+      await new Promise<void>((resolve, reject) => {
+        if ((window as ImpWindow).IMP) { resolve(); return; }
+        const s = document.createElement("script");
+        s.src = "https://cdn.iamport.kr/v1/iamport.js";
+        s.onload = () => resolve();
+        s.onerror = () => reject(new Error("SDK 로드 실패"));
+        document.head.appendChild(s);
+      });
+    } catch {
+      setLoading(false);
+      return;
+    }
+
+    const IMP = (window as ImpWindow).IMP;
+    if (!IMP) { setLoading(false); return; }
+
+    IMP.init(impCode);
+    void trackEvent({ eventName: "payment_started", resultType: info.label });
+
+    IMP.request_pay(
+      {
+        pay_method: "card",
+        merchant_uid: merchantUid,
+        name: "식습관 분석 리포트",
+        amount: 4900,
+        buyer_name: "고객",
+        buyer_tel: "01000000000",
+      },
+      async (rsp) => {
+        if (rsp.success) {
+          const res = await fetch("/api/payment/confirm", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ imp_uid: rsp.imp_uid, merchant_uid: rsp.merchant_uid, amount: 4900 }),
+          });
+          if (res.ok) {
+            void trackEvent({ eventName: "payment_success", resultType: info.label });
+            localStorage.setItem("wg_paid_report_unlocked", merchantUid);
+            router.push("/payment-success");
+          } else {
+            void trackEvent({ eventName: "payment_failed", resultType: info.label });
+            localStorage.setItem("wg_last_payment_error", "결제 검증에 실패했습니다. 다시 시도해주세요.");
+            router.push("/payment-fail");
+          }
+        } else {
+          void trackEvent({ eventName: "payment_failed", resultType: info.label });
+          localStorage.setItem("wg_last_payment_error", rsp.error_msg ?? "결제가 취소되었습니다.");
+          setLoading(false);
+          router.push("/payment-fail");
+        }
+      }
+    );
+  }
+
+  if (alreadyPaid) {
+    return (
+      <div className="rounded-2xl p-5 flex items-center gap-4"
+        style={{ background: "rgba(39,174,96,0.1)", border: "2px solid #27AE60" }}>
+        <span className="text-2xl shrink-0">✅</span>
+        <div className="flex-1">
+          <p className="font-black text-sm" style={{ color: "#27AE60" }}>심층 리포트 구매 완료</p>
+          <p className="text-xs text-gray-500 mt-0.5">전체 분석 리포트를 볼 수 있어요</p>
+        </div>
+        <Link href="/paid-report" className="px-4 py-2 rounded-xl font-black text-sm whitespace-nowrap"
+          style={{ background: "#27AE60", color: "white" }}>
+          보러가기 →
+        </Link>
+      </div>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl overflow-hidden" style={{ border: "2px solid var(--amber)", boxShadow: "0 4px 24px rgba(212,168,83,0.2)" }}>
+      <div className="px-5 py-5" style={{ background: "var(--navy)" }}>
+        <p className="text-xs font-black tracking-widest mb-1.5" style={{ color: "var(--amber)" }}>PREMIUM REPORT</p>
+        <p className="font-black text-white text-lg leading-snug">식습관 분석 리포트</p>
+        <p className="text-xs mt-2" style={{ color: "rgba(255,255,255,0.55)" }}>
+          {info.emoji} {info.label} 유형의 근본 원인과 맞춤 개선 플랜
+        </p>
+      </div>
+      <div className="bg-white px-5 py-5">
+        <div className="space-y-2 mb-5">
+          {[
+            "실패 패턴 근본 원인 심층 분석",
+            "3가지 핵심 트리거 상세 분석",
+            "지금 바꿔야 할 환경 설정 가이드",
+            "7일 단계별 실천 플랜",
+          ].map((item, i) => (
+            <div key={i} className="flex items-center gap-2 text-sm" style={{ color: "var(--navy)" }}>
+              <span style={{ color: "var(--amber)" }}>✓</span>
+              <span>{item}</span>
+            </div>
+          ))}
+        </div>
+        <button
+          onClick={handlePayment}
+          disabled={loading}
+          className="w-full py-4 rounded-2xl font-black text-base transition-all hover:scale-[1.02] disabled:opacity-60"
+          style={{ background: "var(--amber)", color: "var(--navy)" }}
+        >
+          {loading ? "결제창 여는 중..." : "4,900원으로 심층 리포트 받기 →"}
+        </button>
+        <p className="text-xs text-gray-400 text-center mt-2.5">카드 결제 · 7일 내 100% 환불 보장</p>
+      </div>
+    </div>
+  );
+}
+
 // ── 메인 페이지 ──────────────────────────────────────────────────
 const HELP_LABELS: Record<string, string> = {
   obesity_clinic: "비만클리닉", oriental: "한의원", pt: "PT",
@@ -913,6 +1063,9 @@ export default function ResultPage() {
             7일 기록으로 더 정확한 리포트 받기 →
           </Link>
         </div>
+
+        {/* 유료 심층 리포트 CTA — 항상 표시 */}
+        <PaidReportCTA failureType={failureType} />
 
         <p className="text-xs text-gray-400 text-center leading-relaxed px-2 pb-2">
           본 결과는 생활습관 기반의 자기 점검 리포트입니다.
