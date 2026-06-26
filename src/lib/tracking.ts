@@ -74,6 +74,7 @@ export async function trackEvent(payload: TrackPayload): Promise<void> {
         createdAt: payload.createdAt ?? new Date().toISOString(),
         sessionId: payload.sessionId ?? getSessionId(),
         deviceId: payload.deviceId ?? getDeviceId(),
+        userAgent: payload.userAgent ?? (typeof navigator !== "undefined" ? navigator.userAgent : undefined),
       }),
     });
   } catch {
