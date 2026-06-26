@@ -66,22 +66,22 @@ export default function HomePage() {
         </div>
 
         <h1 className="text-2xl font-black text-white leading-snug mb-3 max-w-xs">
-          다이어트가 안 됐던 건<br />
-          <span style={{ color: "var(--amber)" }}>의지 문제가 아니에요</span>
+          또 참았는데<br />
+          <span style={{ color: "var(--amber)" }}>결국 먹었죠?</span>
         </h1>
 
         <p className="text-sm leading-relaxed mb-6 max-w-sm" style={{ color: "rgba(255,255,255,0.65)" }}>
-          반복 실패엔 패턴이 있어요.<br />
-          <strong className="text-white">1분 진단으로 내 실패 원인을 찾고,</strong><br />
-          이번엔 다르게 시작하세요.
+          배가 고픈 게 아닌데 손이 가요.<br />
+          의지 문제가 아니에요 —<br />
+          <strong className="text-white">이게 반복되는 데는 당신만의 패턴이 있어요.</strong>
         </p>
 
         {/* 혜택 체크리스트 */}
         <div className="w-full max-w-sm mb-8 text-left space-y-2.5">
           {[
-            "왜 반복 실패하는지 원인을 알게 돼요",
-            "내가 무너지는 요일·시간대가 보여요",
-            "의지 탓 그만, 데이터로 패턴을 파악해요",
+            "왜 그 순간 무너지는지 원인을 알게 돼요",
+            "내가 취약한 시간대·상황이 데이터로 보여요",
+            "패턴을 알면 다음엔 막을 수 있어요",
           ].map((text, i) => (
             <div key={i} className="flex items-center gap-2.5">
               <span
@@ -101,7 +101,7 @@ export default function HomePage() {
           className="w-full max-w-sm py-4 rounded-2xl font-black text-base transition-transform hover:scale-[1.03] text-center block"
           style={{ background: "var(--amber)", color: "var(--navy)", boxShadow: "0 4px 20px rgba(212,168,83,0.4)" }}
         >
-          내 실패 원인 1분 진단하기 →
+          내 실패 패턴 1분에 찾기 →
         </Link>
         <p className="text-xs mt-2" style={{ color: "rgba(255,255,255,0.35)" }}>
           무료 · 1분 이내 · 즉시 결과
